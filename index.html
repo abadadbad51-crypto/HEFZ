@@ -980,11 +980,13 @@ tbody tr:last-child td{border-bottom:none;}
 /* ── Hamburger button (hidden on desktop) ── */
 .menu-toggle {
   display: none;
-  width: 38px; height: 38px;
+  width: 44px; height: 44px;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; cursor: pointer;
   align-items: center; justify-content: center;
-  font-size: 1.1rem; transition: all .2s; flex-shrink: 0;
+  font-size: 1.3rem; transition: all .2s; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .menu-toggle:hover { border-color: var(--emerald-mid); }
 
@@ -993,6 +995,9 @@ tbody tr:last-child td{border-bottom:none;}
   display: none;
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);
+  z-index: 999;
+  -webkit-tap-highlight-color: transparent;
+}
   z-index: 99;
   backdrop-filter: blur(2px);
 }
@@ -1015,8 +1020,9 @@ tbody tr:last-child td{border-bottom:none;}
   .sidebar {
     transform: translateX(105%);
     width: 280px;
-    box-shadow: -6px 0 24px rgba(0,0,0,.25);
-    z-index: 300;
+    box-shadow: -6px 0 24px rgba(0,0,0,.35);
+    z-index: 1000;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
   }
   .sidebar.open { transform: translateX(0); }
 
@@ -1575,7 +1581,7 @@ tbody tr:last-child td{border-bottom:none;}
   <!-- Main -->
   <div class="main" id="mainContent">
     <div class="topbar">
-      <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="القائمة">☰</button>
+      <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" ontouchend="event.preventDefault();toggleSidebar()" aria-label="القائمة">☰</button>
       <div style="flex:1;min-width:0">
         <h1 id="pageTitle">لوحة التحكم</h1>
         <p style="font-size:.8rem;color:var(--text-muted);margin-top:2px;" id="pageDate"></p>
@@ -2115,7 +2121,7 @@ const T = {
     reportWeak:'Weak Students', reportAttendance:'Attendance Report',
     printReport:'🖨️ Print Report', exportReport:'📄 Export',
     // ── Empty states ──
-    noStudents:'No students registered yet', noCircles:'No circles yet',
+    noStudents:'No students registered yet', noCircles:'No Halaqas yet',
     noTeachers:'No teachers yet', noSessions:'No sessions recorded yet',
     addFirst:'Start by adding one above',
     // ── Days ──
@@ -2609,10 +2615,10 @@ const navConfig = {
     {section:'الرئيسية',     sectionEn:'Main'},
     {id:'dashboard',  icon:'📊', label:'لوحة التحكم',          labelEn:'Dashboard'},
     {id:'analytics',  icon:'📈', label:'الإحصائيات المتقدمة',   labelEn:'Analytics'},
-    {section:'إدارة الحلقات', sectionEn:'Circle Management'},
+    {section:'إدارة الحلقات', sectionEn:'Halaqa Management'},
     {id:'students',   icon:'👥', label:'الطلاب',               labelEn:'Students'},
     {id:'teachers',   icon:'👨‍🏫', label:'المعلمون',            labelEn:'Teachers'},
-    {id:'circles',    icon:'🕌', label:'الحلقات',              labelEn:'Circles'},
+    {id:'circles',    icon:'🕌', label:'الحلقات',              labelEn:'Quran Halaqas'},
     {id:'attendance', icon:'✅', label:'الحضور والغياب',        labelEn:'Attendance'},
     {id:'calendar',   icon:'📅', label:'التقويم',              labelEn:'Calendar'},
     {section:'التحفيز والمتابعة', sectionEn:'Motivation & Follow-up'},
@@ -2624,7 +2630,7 @@ const navConfig = {
   teacher:[
     {section:'الرئيسية', sectionEn:'Main'},
     {id:'t-dashboard',   icon:'📊', label:'لوحة المعلم',       labelEn:'Dashboard'},
-    {section:'الحلقة', sectionEn:'Circle'},
+    {section:'الحلقة', sectionEn:'Halaqa'},
     {id:'t-students',    icon:'👥', label:'طلابي',             labelEn:'My Students'},
     {id:'t-session',     icon:'📖', label:'تسجيل الجلسة',      labelEn:'Record Session'},
     {id:'t-attendance',  icon:'✅', label:'الحضور',            labelEn:'Attendance'},
@@ -3253,7 +3259,7 @@ pages['students'] = function(el) {
     <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
       <input style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Tajawal',sans-serif;flex:1;min-width:180px;outline:none" placeholder="🔍 ${t('search')}">
       <select style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Tajawal',sans-serif">
-        <option>${currentLang==='en'?'All Circles':'كل الحلقات'}</option>
+        <option>${currentLang==='en'?'All Halaqas':'كل الحلقات'}</option>
         ${DB.circles.map(c=>`<option>${c.name}</option>`).join('')}
       </select>
       <select style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Tajawal',sans-serif">
@@ -3435,7 +3441,7 @@ function renderTeacherCard(tc) {
         <div class="plan-row" style="margin:0">
           <span class="plan-icon">🕌</span>
           <div class="plan-text">
-            <span style="color:var(--text-muted)">${currentLang==='en'?'Circle:':'الحلقة:'}</span>
+            <span style="color:var(--text-muted)">${currentLang==='en'?'Halaqa:':'الحلقة:'}</span>
             <strong>${circle?.name||`<span style="color:var(--text-dim)">${currentLang==='en'?'Unassigned':'غير مسند'}</span>`}</strong>
           </div>
           ${circle?`<span class="badge green">${students.length} ${t('students')}</span>`:''}
@@ -3478,7 +3484,7 @@ function renderTeacherCard(tc) {
       ` : `
         <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;
              font-size:.8rem;color:var(--text-dim);margin-bottom:14px">
-          ${currentLang==='en'?'No circle assigned to this teacher yet':'لم يتم إسناد حلقة لهذا المعلم بعد'}
+          ${currentLang==='en'?'No Halaqa assigned to this teacher yet':'لم يتم إسناد حلقة لهذا المعلم بعد'}
         </div>`}
       ${tc.bio?`
         <div style="font-size:.78rem;color:var(--text-muted);line-height:1.7;
@@ -3926,9 +3932,9 @@ window.openAddCircleModal = function() {
   const timeOpts = isEn
     ? ['After Fajr','After Dhuhr','After Asr','After Maghrib','After Isha']
     : ['بعد الفجر','بعد الظهر','بعد العصر','بعد المغرب','بعد العشاء'];
-  openModal('🕌 '+(isEn?'Add New Circle':'إضافة حلقة جديدة'), `
+  openModal('🕌 '+(isEn?'Add New Halaqa':'إضافة حلقة جديدة'), `
     <div class="field"><label>${isEn?'Circle Name *':'اسم الحلقة *'}</label>
-      <input id="cName" placeholder="${isEn?'e.g. Circle 3':'مثال: الحلقة الثالثة'}">
+      <input id="cName" placeholder="${isEn?'e.g. Halaqa 3':'مثال: الحلقة الثالثة'}">
     </div>
     <div class="field">
       <label>${isEn?'Responsible Teacher *':'المعلم المسؤول *'}</label>
@@ -3989,7 +3995,7 @@ window.saveNewCircle = function() {
   const days  = (document.getElementById('cDays')?.value||'').trim() || (isEn?'Unspecified':'غير محدد');
   const sel   = document.getElementById('cTeacherSelect')?.value || '';
 
-  if (!name) { showToast('⚠️ '+(isEn?'Please enter circle name':'يرجى كتابة اسم الحلقة')); return; }
+  if (!name) { showToast('⚠️ '+(isEn?'Please enter Halaqa name':'يرجى كتابة اسم الحلقة')); return; }
   if (DB.circles.find(c => c.name === name)) { showToast('⚠️ '+(isEn?'A circle with this name already exists':'يوجد حلقة بهذا الاسم مسبقاً')); return; }
 
   let teacherId;
@@ -4009,7 +4015,7 @@ window.saveNewCircle = function() {
   const newId = DB.circles.length > 0 ? Math.max(...DB.circles.map(c=>c.id)) + 1 : 1;
   DB.circles.push({ id:newId, name, teacher:teacherId, time, days, room, students:[] });
   closeModalDirect();
-  showToast('✅ '+(isEn?'Circle added: ':'تم إضافة ')+name);
+  showToast('✅ '+(isEn?'Halaqa added: ':'تم إضافة ')+name);
   navigateTo('circles');
 };
 
@@ -5074,7 +5080,7 @@ pages['settings'] = function(el) {
           ${[
             [studentCount,'👥',isEn?'Students':'طالب'],
             [teacherCount,'📚',isEn?'Teachers':'معلم'],
-            [circleCount,'🕌',isEn?'Circles':'حلقة'],
+            [circleCount,'🕌',isEn?'Halaqas':'حلقة'],
             [sessionCount,'📖',isEn?'Sessions':'جلسة'],
             [notifCount,'🔔',isEn?'Alerts':'إشعار'],
           ].map(([v,ic,l])=>`
@@ -5372,7 +5378,7 @@ pages['t-dashboard'] = function(el) {
 
     <div class="card">
       <div class="section-hdr">
-        <h2>${currentLang==='en'?'Circle Students':'طلاب الحلقة'}</h2>
+        <h2>${currentLang==='en'?'Halaqa Students':'طلاب الحلقة'}</h2>
         <button class="btn btn-solid btn-sm" onclick="navigateTo('t-session')">+ ${currentLang==='en'?'Record Session':'تسجيل جلسة'}</button>
       </div>
       ${myStudents.length===0
@@ -6077,8 +6083,8 @@ pages['t-reports'] = function(el) {
     el.innerHTML = `
       <div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
         <div style="font-size:3rem;margin-bottom:12px">📋</div>
-        <div style="font-size:1rem;font-weight:600;margin-bottom:6px">${isEn?'No circle assigned to you':'لا توجد حلقة مسندة إليك'}</div>
-        <div style="font-size:.85rem">${isEn?'Contact administration to assign a circle':'تواصل مع الإدارة لإسناد حلقة لك'}</div>
+        <div style="font-size:1rem;font-weight:600;margin-bottom:6px">${isEn?'No Halaqa assigned to you':'لا توجد حلقة مسندة إليك'}</div>
+        <div style="font-size:.85rem">${isEn?'Contact administration to assign a Halaqa':'تواصل مع الإدارة لإسناد حلقة لك'}</div>
       </div>`;
     return;
   }
@@ -6103,7 +6109,7 @@ pages['t-reports'] = function(el) {
         <div style="display:flex;align-items:center;gap:14px">
           <div style="font-size:2rem">🕌</div>
           <div>
-            <div style="font-size:1.15rem;font-weight:800">${circle?.name||(isEn?'My Circle':'حلقتي')}</div>
+            <div style="font-size:1.15rem;font-weight:800">${circle?.name||(isEn?'My Halaqa':'حلقتي')}</div>
             <div style="font-size:.78rem;opacity:.9;margin-top:3px">🕐 ${circle?.time||'—'} · 📅 ${circle?.days||'—'}</div>
           </div>
         </div>
@@ -6297,7 +6303,7 @@ pages['t-attendance'] = function(el) {
         <div>
           <div style="font-size:1rem;font-weight:700">📅 ${isEn?'Attendance Record':'سجل الحضور'} — ${today}</div>
           <div style="font-size:.8rem;color:var(--text-muted);margin-top:4px">
-            🕌 ${circle?.name||(isEn?'My Circle':'حلقتي')} · ${myStudents.length} ${t('students')}
+            🕌 ${circle?.name||(isEn?'My Halaqa':'حلقتي')} · ${myStudents.length} ${t('students')}
           </div>
         </div>
         <div style="display:flex;gap:8px">
@@ -7869,7 +7875,7 @@ pages['analytics'] = function(el) {
       ${circleStats.length===0?`<div style="text-align:center;padding:30px;color:var(--text-muted)">${t('noCircles')}</div>`:`
       <div class="table-wrap"><table>
         <thead><tr>
-          <th>${isEn?'Circle':'الحلقة'}</th>
+          <th>${isEn?'Halaqa':'الحلقة'}</th>
           <th>${isEn?'Students':'الطلاب'}</th>
           <th>${isEn?'Avg Progress':'متوسط التقدم'}</th>
           <th>${isEn?'Avg Attendance':'متوسط الحضور'}</th>
@@ -8254,7 +8260,7 @@ window.openAddEventModal = function() {
     </div>
     <div class="field"><label>${isEn?'Circle (optional)':'الحلقة (اختياري)'}</label>
       <select id="evCircle">
-        <option value="">${isEn?'— All circles —':'— كل الحلقات —'}</option>
+        <option value="">${isEn?'— All Halaqas —':'— كل الحلقات —'}</option>
         ${DB.circles.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
       </select>
     </div>
@@ -8547,7 +8553,7 @@ window.openAddStudentModal = function() {
     <div class="field"><label>${t('thCircle')}</label>
       <select id="newCircle">
         ${DB.circles.length===0
-          ? `<option value="">${isEn?'No circles yet':'لا توجد حلقات بعد'}</option>`
+          ? `<option value="">${isEn?'No Halaqas yet':'لا توجد حلقات بعد'}</option>`
           : DB.circles.map(c=>`<option>${c.name}</option>`).join('')}
       </select>
     </div>
@@ -9062,7 +9068,10 @@ window.toggleSidebar = function() {
   const ov = document.getElementById('sidebarOverlay');
   if (!sb) return;
   const isOpen = sb.classList.toggle('open');
-  if (ov) ov.classList.toggle('show', isOpen);
+  if (ov) {
+    ov.style.display = isOpen ? 'block' : 'none';
+    ov.classList.toggle('show', isOpen);
+  }
   document.body.style.overflow = isOpen ? 'hidden' : '';
 };
 
@@ -9070,7 +9079,7 @@ window.closeSidebar = function() {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebarOverlay');
   if (sb) sb.classList.remove('open');
-  if (ov) ov.classList.remove('show');
+  if (ov) { ov.classList.remove('show'); ov.style.display = 'none'; }
   document.body.style.overflow = '';
 };
 
@@ -9329,11 +9338,13 @@ window.signInWithGoogle = function() {
           document.getElementById('app').style.display = 'block';
           initApp();
           setTimeout(buildBottomNav, 100);
+          startSessionWatcher();
+          PUSH.init();
           showToast('✅ أهلاً ' + existing.name + '!');
         } else {
-          // حساب جديد — اسأل عن الدور
+          // حساب جديد عبر Google = مدير تلقائياً
           _pendingGoogleUser = { name: name, email: email, photo: info.picture };
-          showGoogleRoleModal();
+          completeGoogleSignIn('admin');
         }
       })
       .catch(function() { showToast('❌ تعذّر الاتصال بـ Google'); });
@@ -9371,11 +9382,13 @@ window.showGoogleRoleModal = function() {
 
 window.completeGoogleSignIn = function(role) {
   if (!_pendingGoogleUser) return;
+  // Google sign-in = admin always
+  var assignedRole = 'admin';
   var colors = ['#22a86f','#4a9fd4','#e07830','#d4a017','#9b6fd4'];
   var newId   = Math.max(0, ...DB.users.map(function(u){ return u.id; })) + 1;
   var newUser = {
     id: newId,
-    role: role,
+    role: assignedRole,
     name: _pendingGoogleUser.name,
     email: _pendingGoogleUser.email,
     photo: _pendingGoogleUser.photo,
@@ -9388,13 +9401,14 @@ window.completeGoogleSignIn = function(role) {
   DB.users.push(newUser);
   saveDB();
   _pendingGoogleUser = null;
-  closeModalDirect();
   currentUser = newUser;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   initApp();
   setTimeout(buildBottomNav, 100);
-  showToast('✅ تم إنشاء حسابك والدخول بنجاح!');
+  startSessionWatcher();
+  PUSH.init();
+  showToast('✅ تم إنشاء حساب المدير والدخول بنجاح!');
 };
 </script>
 </body>
