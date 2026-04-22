@@ -1199,6 +1199,8 @@ tbody tr:last-child td{border-bottom:none;}
 .tl-title{font-size:.85rem;font-weight:600;}
 .tl-sub{font-size:.75rem;color:var(--text-muted);margin-top:2px;}
 .tl-time{font-size:.7rem;color:var(--text-dim);}
+/* Login steps — one visible at a time */
+#loginStep3, #loginStep4 { display:none; }
 </style>
 
 </head>
@@ -1208,7 +1210,7 @@ tbody tr:last-child td{border-bottom:none;}
 <div id="loginScreen">
   <div class="login-wrap" style="max-width:440px">
 
-    <div class="login-logo">
+    <div class="login-logo" id="loginLogoArea">
       <span class="star" id="loginLogo">☪️</span>
       <h1 id="loginInstituteName" style="font-family:'Amiri',serif;font-size:1.9rem;
           color:var(--emerald-light);line-height:1.35;margin-bottom:6px">
@@ -1543,6 +1545,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
 
     <div class="sidebar-bottom">
+      <div id="sessionIndicator" style="text-align:center;margin-bottom:8px;opacity:.7"></div>
       <button class="logout-btn" id="logoutBtn" onclick="doLogout()">🚪 تسجيل خروج</button>
     </div>
   </div>
@@ -1638,6 +1641,8 @@ const DB = {
   notifications: [],
   weeklyData: [0,0,0,0,0,0,0],
   attendance: {},
+  rewards: {},    // { studentId: { points, badges:[] } }
+  calendar: [],   // [ { id, title, date, type, circleId, color, note } ]
 }
 
 // ════════════════════════════════════════════════════════
@@ -1667,7 +1672,8 @@ function loadDB() {
     if (saved.circles)       DB.circles       = saved.circles;
     if (saved.notifications) DB.notifications = saved.notifications;
     if (saved.attendance)    DB.attendance    = saved.attendance;
-    if (saved.weeklyData)    DB.weeklyData    = saved.weeklyData;
+    if (saved.rewards)       DB.rewards       = saved.rewards;
+    if (saved.calendar)      DB.calendar      = saved.calendar;
   } catch(e) {
     console.warn('DB load failed:', e.message);
   }
@@ -1693,78 +1699,11 @@ let currentPage = '';
 let notifPanelOpen = false;
 
 // ==============================
-// DEMO HINTS
+// DEMO HINTS — removed (passwords now hashed)
 // ==============================
-// ── Two-step login functions ──
-function selectRole(role, el) { selectLoginAccount(role, el); }
-
-window.selectLoginAccount = function(role, el) {
-  currentRole = role;
-  const icons  = {admin:'👑', teacher:'📚', parent:'👨‍👦'};
-  const labels = {admin:'المدير', teacher:'المعلم', parent:'ولي الأمر'};
-  const icon  = icons[role] || '👤';
-  const label = labels[role] || role;
-
-  // Update step2 header
-  const riEl = document.getElementById('step2RoleIcon');
-  const rbEl = document.getElementById('step2RoleBadge');
-  const s2nEl = document.getElementById('step2InstituteName');
-  if (riEl)  riEl.textContent  = icon;
-  if (rbEl)  rbEl.innerHTML    = icon + ' دخول كـ: ' + label;
-  if (s2nEl) s2nEl.textContent = (typeof INSTITUTE !== 'undefined' ? INSTITUTE.name : 'معهد نور القرآن الكريم');
-
-  // Build quick account list
-  const accounts = DB.users.filter(u => u.role === role);
-  const listEl   = document.getElementById('accountList');
-  if (listEl) {
-    listEl.innerHTML = accounts.length > 0 ? `
-      <div style="font-size:.74rem;color:var(--text-muted);margin-bottom:8px;font-weight:600">
-        الحسابات المتاحة — اضغط للدخول الفوري:
-      </div>
-      ${accounts.map(u => `
-        <div onclick="quickFillAccount('${u.email}','${u.pass}')"
-          style="display:flex;align-items:center;gap:10px;padding:9px 12px;
-                 border-radius:9px;border:1px solid var(--border);cursor:pointer;
-                 background:var(--surface2);margin-bottom:6px;transition:all .2s"
-          onmouseenter="this.style.borderColor='var(--emerald-mid)';this.style.background='var(--emerald-glow)'"
-          onmouseleave="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
-          <div style="width:34px;height:34px;border-radius:50%;
-               background:var(--emerald-glow);border:1.5px solid var(--emerald-mid);
-               display:flex;align-items:center;justify-content:center;
-               font-size:.85rem;font-weight:800;flex-shrink:0;color:var(--emerald-light)">
-            ${u.name.charAt(0)}
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:.84rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-              ${u.name}
-            </div>
-            <div style="font-size:.68rem;color:var(--text-muted)">${u.email}</div>
-          </div>
-          <span style="font-size:.68rem;color:var(--text-dim)">← نقر للدخول</span>
-        </div>`).join('')}` : '';
-  }
-
-  // Clear error + fields
-  const errEl = document.getElementById('loginError');
-  if (errEl) errEl.style.display = 'none';
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPass').value  = '';
-
-  // Transition steps
-  document.getElementById('loginStep1').style.display = 'none';
-  const step2 = document.getElementById('loginStep2');
-  step2.style.display   = 'block';
-  step2.style.animation = 'fadeUp .35s ease';
-  setTimeout(() => document.getElementById('loginEmail').focus(), 120);
-};
-
-window.backToRoleSelect = function() {
-  document.getElementById('loginStep2').style.display = 'none';
-  document.getElementById('loginStep3').style.display = 'none';
-  const s1 = document.getElementById('loginStep1');
-  s1.style.display   = 'block';
-  s1.style.animation = 'fadeUp .3s ease';
-};
+window.selectLoginAccount = function() {};
+window.backToRoleSelect = function() { showStep(1); };
+function selectRole() {}
 
 // ── Login language switcher ──
 window.setLoginLang = function(lang) {
@@ -1871,31 +1810,44 @@ window.doResetPassword = function() {
     return;
   }
 
-  // Update password in DB
+  // Update password in DB with hashing
   var idx = DB.users.findIndex(function(u) { return u.id === _fpUser.id; });
-  if (idx !== -1) DB.users[idx].pass = pass;
-  saveDB();
-
-  // Auto login
-  currentUser = DB.users[idx];
-  showToast('✅ تم تغيير كلمة المرور والدخول بنجاح!');
-  setTimeout(function() {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    initApp();
-    setTimeout(buildBottomNav, 100);
-  }, 800);
+  if (idx === -1) return;
+  hashPassword(pass).then(function(hashedPass) {
+    DB.users[idx].pass = hashedPass;
+    saveDB();
+    currentUser = DB.users[idx];
+    showToast('✅ تم تغيير كلمة المرور والدخول بنجاح!');
+    setTimeout(function() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initApp();
+      setTimeout(buildBottomNav, 100);
+      startSessionWatcher();
+      PUSH.init();
+    }, 800);
+  });
 };
 let currentRegRole = 'teacher';
 
 // Helper: show one login step, hide others
 window.showStep = function(n) {
-  [1,3,4].forEach(function(x) {
-    var el = document.getElementById('loginStep'+x);
-    if (el) el.style.display = 'none';
+  // أخفِ كل الخطوات بشكل قاطع
+  ['loginStep1','loginStep3','loginStep4'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.style.visibility = 'hidden'; el.style.position = 'absolute'; }
   });
-  var target = document.getElementById('loginStep'+n);
-  if (target) { target.style.display='block'; target.style.animation='fadeUp .35s ease'; }
+  // إخفاء/إظهار الشعار
+  var logo = document.getElementById('loginLogoArea');
+  if (logo) logo.style.display = (n === 1) ? '' : 'none';
+  // أظهر الخطوة المطلوبة فقط
+  var target = document.getElementById('loginStep' + n);
+  if (target) {
+    target.style.display = 'block';
+    target.style.visibility = 'visible';
+    target.style.position = 'relative';
+    target.style.animation = 'fadeUp .35s ease';
+  }
 };
 
 window.showRegisterForm = function() {
@@ -1968,21 +1920,24 @@ window.doRegister = function() {
     status: 'active'
   };
 
-  DB.users.push(newUser);
-  saveDB();
+  // تشفير كلمة المرور قبل الحفظ
+  hashPassword(pass).then(function(hashedPass) {
+    newUser.pass = hashedPass;
+    DB.users.push(newUser);
+    saveDB();
 
-  // Success
-  okEl.textContent = '✅ تم إنشاء حسابك بنجاح! جاري تسجيل الدخول...';
-  okEl.style.display = 'block';
+    okEl.textContent = '✅ تم إنشاء حسابك بنجاح! جاري تسجيل الدخول...';
+    okEl.style.display = 'block';
 
-  // Auto login after 1.2s
-  setTimeout(() => {
-    currentUser = newUser;
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    initApp();
-    setTimeout(buildBottomNav, 100);
-  }, 1200);
+    setTimeout(function() {
+      currentUser = newUser;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initApp();
+      setTimeout(buildBottomNav, 100);
+      startSessionWatcher();
+    }, 1200);
+  });
 };
 
 window.quickFillAccount = function(email, pass) {
@@ -2001,7 +1956,7 @@ let currentLang = 'ar';
 const T = {
   ar: {
     // ── Navigation ──
-    dashboard:'لوحة التحكم', students:'إدارة الطلاب', teachers:'إدارة المعلمين',
+    analytics:'الإحصائيات المتقدمة', rewards:'نقاط المكافآت', calendar:'تقويم الحلقات',
     circles:'الحلقات القرآنية', attendance:'سجل الحضور والغياب',
     reports:'التقارير الشاملة', notifications:'الإشعارات', settings:'إعدادات النظام',
     't-dashboard':'لوحة المعلم', 't-students':'طلابي', 't-session':'تسجيل الجلسة',
@@ -2257,6 +2212,286 @@ function loadSavedTheme() {
   document.documentElement.setAttribute('data-theme', 'desert');
 }
 
+// ════════════════════════════════════════════════════════
+// 🔐 SECURITY — تشفير كلمات المرور + انتهاء الجلسة
+// ════════════════════════════════════════════════════════
+
+// SHA-256 باستخدام Web Crypto API المدمج في المتصفح
+async function hashPassword(pass) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(pass));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// مقارنة كلمة المرور — تدعم الكلمات القديمة (نص عادي) والمشفّرة
+async function verifyPassword(inputPass, storedPass) {
+  // إذا الكلمة المحفوظة بطول 64 (SHA-256 hash) — قارن hash بـ hash
+  if (storedPass && storedPass.length === 64 && /^[0-9a-f]+$/.test(storedPass)) {
+    const inputHash = await hashPassword(inputPass);
+    return inputHash === storedPass;
+  }
+  // كلمة مرور قديمة (نص عادي) — قارن مباشرة وشفّرها
+  return inputPass === storedPass;
+}
+
+// تشفير كلمات المرور القديمة عند أول تحميل
+async function migratePasswords() {
+  let changed = false;
+  for (var i = 0; i < DB.users.length; i++) {
+    var u = DB.users[i];
+    if (u.pass && !(u.pass.length === 64 && /^[0-9a-f]+$/.test(u.pass))) {
+      DB.users[i].pass = await hashPassword(u.pass);
+      changed = true;
+    }
+  }
+  if (changed) saveDB();
+}
+
+// ════════ انتهاء الجلسة تلقائياً ════════
+var SESSION_TIMEOUT  = 30 * 60 * 1000; // 30 دقيقة
+var SESSION_WARNING  =  1 * 60 * 1000; // تحذير قبل دقيقة
+var _sessionTimer    = null;
+var _warningTimer    = null;
+var _countdownInterval = null;
+var _lastActivity    = Date.now();
+
+function createSessionWarningBanner() {
+  if (document.getElementById('sessionWarningBanner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'sessionWarningBanner';
+  banner.style.cssText = [
+    'position:fixed','top:0','left:0','right:0','z-index:99999',
+    'background:linear-gradient(90deg,#c0392b,#e74c3c)',
+    'color:#fff','padding:10px 20px',
+    'display:flex','align-items:center','justify-content:space-between',
+    'font-family:Tajawal,sans-serif','font-size:.9rem','font-weight:600',
+    'box-shadow:0 3px 12px rgba(0,0,0,.3)','animation:fadeUp .3s ease',
+    'display:none'
+  ].join(';');
+  banner.innerHTML = [
+    '<span>⚠️ <span id="sessionCountdown">60</span> ثانية حتى انتهاء الجلسة</span>',
+    '<button onclick="resetSessionTimer();document.getElementById(\'sessionWarningBanner\').style.display=\'none\'"',
+    ' style="background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.5);',
+    'color:#fff;padding:5px 14px;border-radius:6px;cursor:pointer;',
+    'font-family:Tajawal,sans-serif;font-weight:700">🔄 تجديد الجلسة</button>'
+  ].join('');
+  document.body.appendChild(banner);
+}
+
+function showSessionWarning() {
+  var banner = document.getElementById('sessionWarningBanner');
+  if (!banner) return;
+  banner.style.display = 'flex';
+  var secs = 60;
+  var cd = document.getElementById('sessionCountdown');
+  if (cd) cd.textContent = secs;
+  if (_countdownInterval) clearInterval(_countdownInterval);
+  _countdownInterval = setInterval(function() {
+    secs--;
+    if (cd) cd.textContent = secs;
+    if (secs <= 0) clearInterval(_countdownInterval);
+  }, 1000);
+}
+
+function hideSessionWarning() {
+  var banner = document.getElementById('sessionWarningBanner');
+  if (banner) banner.style.display = 'none';
+  if (_countdownInterval) clearInterval(_countdownInterval);
+}
+
+// مؤشر الجلسة في الـ sidebar
+function updateSessionIndicator() {
+  var el = document.getElementById('sessionIndicator');
+  if (!el || !currentUser) return;
+  var remaining = Math.max(0, SESSION_TIMEOUT - (Date.now() - _lastActivity));
+  var mins = Math.floor(remaining / 60000);
+  var secs = Math.floor((remaining % 60000) / 1000);
+  var color = remaining < 5 * 60000 ? '#e74c3c' : remaining < 10 * 60000 ? '#f39c12' : '#22a86f';
+  el.innerHTML = '<span style="color:' + color + ';font-size:.72rem">⏱ ' +
+    (mins + ':' + (secs < 10 ? '0' : '') + secs) + ' متبقي</span>';
+}
+
+function resetSessionTimer() {
+  _lastActivity = Date.now();
+  hideSessionWarning();
+  if (_sessionTimer) clearTimeout(_sessionTimer);
+  if (_warningTimer)  clearTimeout(_warningTimer);
+  if (!currentUser) return;
+
+  // تحذير قبل دقيقة
+  _warningTimer = setTimeout(function() {
+    if (!currentUser) return;
+    showSessionWarning();
+  }, SESSION_TIMEOUT - SESSION_WARNING);
+
+  // تسجيل خروج عند انتهاء الوقت
+  _sessionTimer = setTimeout(function() {
+    if (!currentUser) return;
+    hideSessionWarning();
+    showToast('⏰ انتهت جلستك — يرجى الدخول من جديد');
+    setTimeout(doLogout, 1500);
+  }, SESSION_TIMEOUT);
+}
+
+function startSessionWatcher() {
+  createSessionWarningBanner();
+  ['click','keydown','touchstart','scroll'].forEach(function(ev) {
+    document.addEventListener(ev, resetSessionTimer, { passive: true });
+  });
+  // تحديث المؤشر كل 30 ثانية
+  setInterval(updateSessionIndicator, 30000);
+  resetSessionTimer();
+}
+
+function stopSessionWatcher() {
+  if (_sessionTimer)       clearTimeout(_sessionTimer);
+  if (_warningTimer)       clearTimeout(_warningTimer);
+  if (_countdownInterval)  clearInterval(_countdownInterval);
+  hideSessionWarning();
+}
+
+// ════════════════════════════════════════════════════════
+// 🔔 PUSH NOTIFICATIONS SYSTEM
+// ════════════════════════════════════════════════════════
+
+var PUSH = {
+  permission: 'default',
+  enabled: false,
+
+  // طلب إذن الإشعارات
+  request: function() {
+    if (!('Notification' in window)) return Promise.resolve('unsupported');
+    return Notification.requestPermission().then(function(result) {
+      PUSH.permission = result;
+      PUSH.enabled = result === 'granted';
+      localStorage.setItem('pushEnabled', PUSH.enabled ? '1' : '0');
+      return result;
+    });
+  },
+
+  // إرسال إشعار فوري
+  send: function(title, body, opts) {
+    opts = opts || {};
+    // 1. إشعار المتصفح (Push Notification)
+    if (PUSH.enabled && document.hidden) {
+      try {
+        var n = new Notification(title, {
+          body: body,
+          icon: opts.icon || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRleHQgeT0iNDgiIGZvbnQtc2l6ZT0iNDgiPiDimKo8L3RleHQ+PC9zdmc+',
+          badge: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHRleHQgeT0iMjQiIGZvbnQtc2l6ZT0iMjQiPiDimKo8L3RleHQ+PC9zdmc+',
+          tag: opts.tag || 'hifz-' + Date.now(),
+          requireInteraction: opts.important || false,
+        });
+        n.onclick = function() { window.focus(); n.close(); };
+        if (!opts.persist) setTimeout(function() { n.close(); }, 6000);
+      } catch(e) {}
+    }
+
+    // 2. إشعار داخل التطبيق (In-app toast)
+    if (!document.hidden || !PUSH.enabled) {
+      showToast((opts.emoji||'🔔') + ' ' + title + (body ? ' — ' + body : ''));
+    }
+
+    // 3. حفظ في سجل الإشعارات
+    var notif = {
+      id: Date.now(),
+      type: opts.type || 'info',
+      title: title,
+      msg: (opts.emoji||'🔔') + ' ' + title + (body ? ': ' + body : ''),
+      time: new Date().toLocaleTimeString('ar-SA', {hour:'2-digit', minute:'2-digit'}),
+      read: false,
+    };
+    DB.notifications.unshift(notif);
+    if (DB.notifications.length > 50) DB.notifications.pop(); // keep last 50
+    saveDB();
+
+    // تحديث عدد الشارات في الـ nav
+    PUSH.updateBadge();
+  },
+
+  // تحديث شارة عدد الإشعارات غير المقروءة
+  updateBadge: function() {
+    var unread = DB.notifications.filter(function(n) { return !n.read; }).length;
+    var badge = document.querySelector('#nav-notifications .nav-badge, #nav-p-notifications .nav-badge');
+    if (badge) badge.textContent = unread > 0 ? unread : '';
+    // title tab
+    document.title = unread > 0 ? '(' + unread + ') نظام التحفيظ' : 'نظام التحفيظ';
+  },
+
+  // تهيئة عند الدخول
+  init: function() {
+    PUSH.enabled = localStorage.getItem('pushEnabled') === '1';
+    PUSH.permission = Notification.permission;
+    if (PUSH.permission === 'granted') PUSH.enabled = true;
+    PUSH.updateBadge();
+
+    // طلب الإذن بعد 3 ثوان من الدخول (مرة واحدة)
+    if (PUSH.permission === 'default' && !localStorage.getItem('pushAsked')) {
+      setTimeout(function() {
+        if (currentUser) {
+          localStorage.setItem('pushAsked', '1');
+          showPushPermissionBanner();
+        }
+      }, 3000);
+    }
+  }
+};
+
+// شريط طلب الإذن
+function showPushPermissionBanner() {
+  if (document.getElementById('pushBanner')) return;
+  var isEn = currentLang === 'en';
+  var banner = document.createElement('div');
+  banner.id = 'pushBanner';
+  banner.style.position = 'fixed';
+  banner.style.bottom = '80px';
+  banner.style.left = '50%';
+  banner.style.transform = 'translateX(-50%)';
+  banner.style.background = 'var(--surface)';
+  banner.style.border = '1px solid var(--emerald-mid)';
+  banner.style.borderRadius = '14px';
+  banner.style.padding = '14px 18px';
+  banner.style.zIndex = '9999';
+  banner.style.boxShadow = '0 8px 32px rgba(0,0,0,.25)';
+  banner.style.maxWidth = '360px';
+  banner.style.width = '90%';
+  banner.style.fontFamily = 'Tajawal,sans-serif';
+  var t1 = isEn ? 'Enable Push Notifications?' : '\u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a';
+  var t2 = isEn ? 'Instant alerts for sessions and attendance' : '\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0641\u0648\u0631\u064a\u0629 \u0644\u0644\u062c\u0644\u0633\u0627\u062a';
+  var okTxt = isEn ? 'Enable' : '\u062a\u0641\u0639\u064a\u0644';
+  var ltTxt = isEn ? 'Later' : '\u0644\u0627\u062d\u0642\u0627\u064b';
+  var row1 = document.createElement('div');
+  row1.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:12px';
+  row1.innerHTML = '<div style="font-size:1.5rem">&#128276;</div><div><div style="font-weight:700;font-size:.9rem">' + t1 + '</div><div style="font-size:.74rem;color:var(--text-muted)">' + t2 + '</div></div>';
+  var row2 = document.createElement('div');
+  row2.style.cssText = 'display:flex;gap:8px';
+  var btn1 = document.createElement('button');
+  btn1.className = 'btn btn-solid'; btn1.style.flex = '1';
+  btn1.textContent = okTxt;
+  btn1.onclick = function() { enablePushAndClose(); };
+  var btn2 = document.createElement('button');
+  btn2.className = 'btn'; btn2.style.cssText = 'flex:1;background:var(--surface2)';
+  btn2.textContent = ltTxt;
+  btn2.onclick = function() { closePushBanner(); };
+  row2.appendChild(btn1); row2.appendChild(btn2);
+  banner.appendChild(row1); banner.appendChild(row2);
+  document.body.appendChild(banner);
+  setTimeout(function() { if (banner.parentNode) banner.remove(); }, 15000);
+}
+
+// Push banner button helpers
+window.enablePushAndClose = function() {
+  var b = document.getElementById('pushBanner');
+  if (b) b.remove();
+  PUSH.request().then(function(r) {
+    if (r === 'granted') showToast('🔔 ' + (currentLang==='en'?'Notifications enabled!':'تم تفعيل الإشعارات!'));
+  });
+};
+window.closePushBanner = function() {
+  var b = document.getElementById('pushBanner');
+  if (b) b.remove();
+};
+
 // ==============================
 // LOGIN
 // ==============================
@@ -2264,35 +2499,63 @@ function doLogin() {
   var email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
   var pass  = (document.getElementById('loginPass').value  || '').trim();
   var errEl = document.getElementById('loginError');
+  var btn   = document.getElementById('loginSubmitBtn');
 
-  // قبول حسابات المدير والمعلم وولي الأمر
-  var matches = DB.users.filter(function(u) {
-    return u.email.toLowerCase() === email && u.pass === pass;
-  });
-  // إذا فيه أكثر من نتيجة، اختر المدير أولاً
-  var user = matches.find(function(u) { return u.role === 'admin'; }) || matches[0];
-
-  if (!user) {
+  if (!email || !pass) {
     if (errEl) errEl.style.display = 'block';
-    var passInput = document.getElementById('loginPass');
-    if (passInput) { passInput.value = ''; passInput.focus(); }
     return;
   }
-  if (errEl) errEl.style.display = 'none';
-  currentUser = user;
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  initApp();
-  setTimeout(buildBottomNav, 100);
+
+  // البحث عن المستخدم بالإيميل أولاً
+  var candidates = DB.users.filter(function(u) {
+    return u.email.toLowerCase() === email;
+  });
+  if (candidates.length === 0) {
+    if (errEl) errEl.style.display = 'block';
+    return;
+  }
+
+  // تعطيل الزر أثناء التحقق
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  // التحقق من كلمة المرور بشكل async
+  var checks = candidates.map(function(u) {
+    return verifyPassword(pass, u.pass).then(function(ok) {
+      return ok ? u : null;
+    });
+  });
+
+  Promise.all(checks).then(function(results) {
+    var matches = results.filter(Boolean);
+    var user = matches.find(function(u) { return u.role === 'admin'; }) || matches[0];
+
+    if (btn) { btn.disabled = false; btn.textContent = '🔐 دخول للنظام'; }
+
+    if (!user) {
+      if (errEl) errEl.style.display = 'block';
+      var passInput = document.getElementById('loginPass');
+      if (passInput) { passInput.value = ''; passInput.focus(); }
+      return;
+    }
+
+    if (errEl) errEl.style.display = 'none';
+    currentUser = user;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+    setTimeout(buildBottomNav, 100);
+    startSessionWatcher(); // بدء مراقبة الخمول
+    setTimeout(updateSessionIndicator, 500);
+    PUSH.init(); // تهيئة نظام الإشعارات
+  });
 }
 
 function doLogout() {
+  stopSessionWatcher();
   currentUser = null;
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginStep1').style.display = 'block';
-  document.getElementById('loginStep4').style.display = 'none';
   document.getElementById('app').style.display = 'none';
-  // Clear fields
+  showStep(1);
   var e = document.getElementById('loginEmail');
   var p = document.getElementById('loginPass');
   if (e) e.value = '';
@@ -2343,55 +2606,54 @@ function initApp() {
 // ==============================
 const navConfig = {
   admin:[
-    {section:'الرئيسية'},
-    {id:'dashboard',icon:'📊',label:'لوحة التحكم'},
-    {section:'إدارة الحلقات'},
-    {id:'students',icon:'👥',label:'الطلاب'},
-    {id:'teachers',icon:'👨‍🏫',label:'المعلمون'},
-    {id:'circles',icon:'🕌',label:'الحلقات'},
-    {id:'attendance',icon:'✅',label:'الحضور والغياب'},
-    {section:'المتابعة'},
-    {id:'reports',icon:'📋',label:'التقارير'},
-    {id:'notifications',icon:'🔔',label:'الإشعارات',badge:3},
-    {id:'settings',icon:'⚙️',label:'الإعدادات'},
+    {section:'الرئيسية',     sectionEn:'Main'},
+    {id:'dashboard',  icon:'📊', label:'لوحة التحكم',          labelEn:'Dashboard'},
+    {id:'analytics',  icon:'📈', label:'الإحصائيات المتقدمة',   labelEn:'Analytics'},
+    {section:'إدارة الحلقات', sectionEn:'Circle Management'},
+    {id:'students',   icon:'👥', label:'الطلاب',               labelEn:'Students'},
+    {id:'teachers',   icon:'👨‍🏫', label:'المعلمون',            labelEn:'Teachers'},
+    {id:'circles',    icon:'🕌', label:'الحلقات',              labelEn:'Circles'},
+    {id:'attendance', icon:'✅', label:'الحضور والغياب',        labelEn:'Attendance'},
+    {id:'calendar',   icon:'📅', label:'التقويم',              labelEn:'Calendar'},
+    {section:'التحفيز والمتابعة', sectionEn:'Motivation & Follow-up'},
+    {id:'rewards',       icon:'🏆', label:'نقاط المكافآت',     labelEn:'Rewards'},
+    {id:'reports',       icon:'📋', label:'التقارير',           labelEn:'Reports'},
+    {id:'notifications', icon:'🔔', label:'الإشعارات', badge:3, labelEn:'Notifications'},
+    {id:'settings',      icon:'⚙️', label:'الإعدادات',          labelEn:'Settings'},
   ],
   teacher:[
-    {section:'الرئيسية'},
-    {id:'t-dashboard',icon:'📊',label:'لوحة المعلم'},
-    {section:'الحلقة'},
-    {id:'t-students',icon:'👥',label:'طلابي'},
-    {id:'t-session',icon:'📖',label:'تسجيل الجلسة'},
-    {id:'t-attendance',icon:'✅',label:'الحضور'},
-    {section:'التقارير'},
-    {id:'t-plans',icon:'📝',label:'خطط الحفظ'},
-    {id:'t-reports',icon:'📋',label:'تقارير الطلاب'},
+    {section:'الرئيسية', sectionEn:'Main'},
+    {id:'t-dashboard',   icon:'📊', label:'لوحة المعلم',       labelEn:'Dashboard'},
+    {section:'الحلقة', sectionEn:'Circle'},
+    {id:'t-students',    icon:'👥', label:'طلابي',             labelEn:'My Students'},
+    {id:'t-session',     icon:'📖', label:'تسجيل الجلسة',      labelEn:'Record Session'},
+    {id:'t-attendance',  icon:'✅', label:'الحضور',            labelEn:'Attendance'},
+    {section:'التقارير', sectionEn:'Reports'},
+    {id:'t-plans',       icon:'📝', label:'خطط الحفظ',         labelEn:'Study Plans'},
+    {id:'t-reports',     icon:'📋', label:'تقارير الطلاب',     labelEn:'Student Reports'},
   ],
   parent:[
-    {section:'متابعة الطالب'},
-    {id:'p-dashboard',icon:'🏠',label:'الصفحة الرئيسية'},
-    {id:'p-progress',icon:'📈',label:'تقدم الحفظ'},
-    {id:'p-reports',icon:'📋',label:'التقارير الدورية'},
-    {id:'p-notifications',icon:'🔔',label:'الإشعارات',badge:2},
+    {section:'متابعة الطالب', sectionEn:'Student Follow-up'},
+    {id:'p-dashboard',      icon:'🏠', label:'الصفحة الرئيسية', labelEn:'Home'},
+    {id:'p-map',            icon:'🗺️', label:'خريطة الحفظ',    labelEn:'Memorization Map'},
+    {id:'p-exam',           icon:'📝', label:'اختبار الحفظ',    labelEn:'Exam'},
+    {id:'p-progress',       icon:'📈', label:'تقدم الحفظ',     labelEn:'Progress'},
+    {id:'p-reports',        icon:'📋', label:'التقارير الدورية', labelEn:'Reports'},
+    {id:'p-notifications',  icon:'🔔', label:'الإشعارات', badge:2, labelEn:'Notifications'},
   ],
 };
 
 function buildNav() {
   const nav = document.getElementById('sidebarNav');
   nav.innerHTML = '';
+  const isEn = currentLang === 'en';
   const config = navConfig[currentUser.role] || navConfig['admin'];
   config.forEach(item=>{
     if (item.section) {
-      const sectionLabels = {
-        'الرئيسية': currentLang==='en'?'Main':'الرئيسية',
-        'إدارة الحلقات': currentLang==='en'?'Circle Management':'إدارة الحلقات',
-        'المتابعة': currentLang==='en'?'Follow-up':'المتابعة',
-        'الحلقة': currentLang==='en'?'Circle':'الحلقة',
-        'التقارير': currentLang==='en'?'Reports':'التقارير',
-        'متابعة الطالب': currentLang==='en'?'Student Follow-up':'متابعة الطالب',
-      };
-      nav.innerHTML += `<div class="nav-section">${sectionLabels[item.section]||item.section}</div>`;
+      const sec = isEn ? (item.sectionEn || item.section) : item.section;
+      nav.innerHTML += `<div class="nav-section">${sec}</div>`;
     } else {
-      const label = t(item.id) || item.label;
+      const label = isEn ? (item.labelEn || item.label) : item.label;
       nav.innerHTML += `
         <div class="nav-item" id="nav-${item.id}" onclick="navigateTo('${item.id}')">
           <span class="nav-icon">${item.icon}</span>
@@ -3431,21 +3693,23 @@ window.saveNewTeacher = function() {
   }
 
   const newId  = DB.users.length > 0 ? Math.max(...DB.users.map(u=>u.id)) + 1 : 1;
-  const colors = ['#4a9fd4','#e07830','#9b6fd4','#e05555','#d4a017','#60b0f0','#f0b860','#22a86f'];
-  DB.users.push({
-    id: newId, role: 'teacher', name, email, pass,
-    color: colors[newId % colors.length],
-    phone: (document.getElementById('tPhone')?.value||'').trim(),
-    specialization: document.getElementById('tSpec')?.value || (isEn?'Memorization & Review':'حفظ ومراجعة'),
-    experience: parseInt(document.getElementById('tExp')?.value)||0,
-    joinDate: document.getElementById('tJoin')?.value || new Date().toISOString().split('T')[0],
-    status: 'active',
-    bio: (document.getElementById('tBio')?.value||'').trim(),
+  hashPassword(pass).then(function(hashedPass) {
+    const colors = ['#4a9fd4','#e07830','#9b6fd4','#e05555','#d4a017','#60b0f0','#f0b860','#22a86f'];
+    DB.users.push({
+      id: newId, role: 'teacher', name, email, pass: hashedPass,
+      color: colors[newId % colors.length],
+      phone: (document.getElementById('tPhone')?.value||'').trim(),
+      specialization: document.getElementById('tSpec')?.value || (isEn?'Memorization & Review':'حفظ ومراجعة'),
+      experience: parseInt(document.getElementById('tExp')?.value)||0,
+      joinDate: document.getElementById('tJoin')?.value || new Date().toISOString().split('T')[0],
+      status: 'active',
+      bio: (document.getElementById('tBio')?.value||'').trim(),
+    });
+    saveDB();
+    closeModalDirect();
+    showToast('✅ '+(isEn?'Teacher account created: ':'تم إنشاء حساب المعلم: ')+name);
+    navigateTo('teachers');
   });
-  saveDB();
-  closeModalDirect();
-  showToast('✅ '+(isEn?'Teacher account created: ':'تم إنشاء حساب المعلم: ')+name);
-  navigateTo('teachers');
 };
 
 // ---- EDIT TEACHER MODAL ----
@@ -4685,6 +4949,55 @@ pages['settings'] = function(el) {
   ];
 
   el.innerHTML = `
+    <!-- Push Notifications Card -->
+    <div class="card" style="margin-bottom:16px;border:1px solid var(--emerald-mid)">
+      <div class="card-title"><span class="ct-icon">🔔</span> ${isEn?'Push Notifications':'إشعارات Push'}</div>
+      <div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:${PUSH.enabled?'var(--emerald-glow)':'var(--surface)'};
+             border:2px solid ${PUSH.enabled?'var(--emerald-mid)':'var(--border)'};
+             display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">
+          ${PUSH.enabled?'🔔':'🔕'}
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:.9rem">
+            ${PUSH.enabled
+              ? (isEn?'✅ Notifications Enabled':'✅ الإشعارات مفعّلة')
+              : (isEn?'❌ Notifications Disabled':'❌ الإشعارات معطّلة')}
+          </div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px">
+            ${PUSH.permission==='denied'
+              ? (isEn?'Blocked in browser settings — please allow from site settings':'محظورة في إعدادات المتصفح — اسمح من إعدادات الموقع')
+              : PUSH.enabled
+              ? (isEn?'You will receive instant alerts for sessions, absences & rewards':'ستتلقى تنبيهات فورية للجلسات والغياب والمكافآت')
+              : (isEn?'Enable to receive instant notifications on your device':'فعّل لتلقي إشعارات فورية على جهازك')}
+          </div>
+        </div>
+        ${PUSH.permission !== 'denied' ? `
+          <button class="btn ${PUSH.enabled?'btn-red':'btn-solid'} btn-sm"
+                  onclick="togglePushNotifications(this)">
+            ${PUSH.enabled?(isEn?'Disable':'تعطيل'):(isEn?'Enable':'تفعيل')}
+          </button>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${[
+          ['session', '📖', isEn?'New memorization sessions':'جلسات الحفظ الجديدة', true],
+          ['absence', '⚠️', isEn?'Student absence alerts':'تنبيهات الغياب', true],
+          ['reward',  '🏆', isEn?'Rewards and achievements':'المكافآت والإنجازات', true],
+          ['report',  '📊', isEn?'Weekly reports':'التقارير الأسبوعية', false],
+        ].map(([key,ic,lbl,def])=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+            <span style="font-size:1.1rem">${ic}</span>
+            <span style="flex:1;font-size:.82rem;font-weight:600">${lbl}</span>
+            <div class="toggle ${def?'on':''}" onclick="this.classList.toggle('on')"></div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;font-size:.75rem;color:var(--text-muted);line-height:1.7">
+        💡 ${isEn
+          ? 'Notifications appear as browser alerts when the app is open, and as device notifications when closed (browser must support it).'
+          : 'الإشعارات تظهر كتنبيهات في المتصفح عند فتح التطبيق، وعلى الجهاز عند إغلاقه (يجب أن يدعمها المتصفح).'}
+      </div>
+    </div>
+
     <div class="grid-2" style="margin-bottom:16px">
       <div class="card">
         <div class="card-title"><span class="ct-icon">⚙️</span> ${t('settings')}</div>
@@ -5692,6 +6005,15 @@ window.saveSession = function() {
   student.lastSession = 'اليوم';
 
   saveDB(); showToast('✅ تم حفظ جلسة ' + student.name + ' — ' + surahName + ' (آية ' + from + '–' + to + ')');
+
+  // 🔔 إشعار Push لولي الأمر
+  var gradeEmoji = grade==='ممتاز'||grade==='Excellent'?'🌟':grade==='جيد جداً'||grade==='Very Good'?'⭐':'📖';
+  PUSH.send(
+    'جلسة حفظ جديدة — ' + student.name,
+    surahName + ' آية ' + from + '–' + to + ' · التقييم: ' + grade,
+    { emoji: gradeEmoji, type: 'session', tag: 'session-' + student.id }
+  );
+
   // Re-render page to update table
   navigateTo('t-session');
 };
@@ -5933,6 +6255,13 @@ window.teacherSendNotif = function() {
   const fullMsg = student ? `[عن: ${student.name}] ${msg}` : msg;
 
   DB.notifications.unshift({id:Date.now(), type:nType, msg:fullMsg, time:'الآن'});
+
+  // 🔔 Push notification
+  PUSH.send(
+    pIcon + ' ' + (currentLang==='en'?'New Notification':'إشعار جديد') + ' → ' + recLabels,
+    fullMsg,
+    { emoji: pIcon, type: nType, important: priority==='urgent' }
+  );
   window._tNotifRecs = new Set();
   document.getElementById('tNotifMsg').value = '';
   ['parent','admin'].forEach(v=>{
@@ -6045,15 +6374,32 @@ window.teacherMarkAll = function(status) {
 window.saveTeacherAtt = function() {
   const myStudents = DB.students.filter(s => s.teacher === currentUser.id);
   let present=0, absent=0, late=0;
+  const absentStudents = [], lateStudents = [];
   myStudents.forEach(s => {
     const st = DB.attendance[s.id];
     if (st==='present'){present++; s.attendance=Math.min(100,s.attendance+1);}
-    if (st==='absent') {absent++;  s.attendance=Math.max(0,  s.attendance-3);}
-    if (st==='late')   {late++;    s.attendance=Math.max(0,  s.attendance-1);}
+    if (st==='absent') {absent++;  s.attendance=Math.max(0,  s.attendance-3); absentStudents.push(s.name);}
+    if (st==='late')   {late++;    s.attendance=Math.max(0,  s.attendance-1); lateStudents.push(s.name);}
   });
   saveDB();
   const isEn = currentLang==='en';
   showToast(`💾 ${isEn?'Saved':'تم الحفظ'} — ${t('present')}: ${present} · ${t('absent')}: ${absent} · ${t('late')}: ${late}`);
+
+  // 🔔 إشعار Push لكل طالب غائب
+  if (absentStudents.length > 0) {
+    PUSH.send(
+      isEn ? '⚠️ Absence Recorded' : '⚠️ تسجيل غياب',
+      (isEn ? 'Absent today: ' : 'غائب اليوم: ') + absentStudents.join(', '),
+      { emoji:'⚠️', type:'alert', tag:'absence-today', important:true }
+    );
+  }
+  if (lateStudents.length > 0) {
+    PUSH.send(
+      isEn ? '⏰ Late Arrival' : '⏰ تأخر عن الحلقة',
+      lateStudents.join(', '),
+      { emoji:'⏰', type:'warn', tag:'late-today' }
+    );
+  }
 };
 
 // ---- PARENT DASHBOARD ----
@@ -6371,6 +6717,516 @@ pages['p-reports'] = function(el) {
   `;
 };
 
+// =============================================
+// 🗺️ INTERACTIVE MEMORIZATION MAP
+// =============================================
+pages['p-map'] = function(el) {
+  const isEn = currentLang==='en';
+  const s = DB.students.find(st=>st.id===(currentUser.studentId||1))||DB.students[0];
+  if (!s) { el.innerHTML=`<div style="text-align:center;padding:60px;color:var(--text-muted)">${t('noStudents')}</div>`; return; }
+
+  const juz = s.juzProgress || Array(30).fill(0);
+  const pagesPerJuz = s.totalPages / 30;
+  const done    = juz.filter(v=>v>=20).length;
+  const partial = juz.filter(v=>v>0&&v<20).length;
+  const pct     = Math.round(s.pages/s.totalPages*100);
+
+  // Surah data mapped to juz
+  const JUZ_SURAHS = {
+    1:['الفاتحة','البقرة(1-141)'],2:['البقرة(142-286)'],3:['آل عمران'],
+    4:['النساء'],5:['النساء(ج)','المائدة'],6:['المائدة(ج)','الأنعام'],
+    7:['الأنعام(ج)','الأعراف'],8:['الأنعام(ج)','الأنفال'],9:['الأنفال(ج)','التوبة'],
+    10:['يونس','هود','يوسف(ج)'],11:['يوسف','الرعد','إبراهيم','الحجر'],
+    12:['النحل','الإسراء'],13:['الكهف','مريم','طه(ج)'],14:['طه','الأنبياء'],
+    15:['الحج','المؤمنون','النور(ج)'],16:['النور','الفرقان','الشعراء','النمل(ج)'],
+    17:['النمل','القصص','العنكبوت(ج)'],18:['المؤمن','فصلت(ج)'],
+    19:['الشورى','الزخرف','الدخان','الجاثية'],20:['الأحقاف','محمد','الفتح','الحجرات'],
+    21:['الذاريات','الطور','النجم','القمر','الرحمن','الواقعة','الحديد'],
+    22:['المجادلة','الحشر','الممتحنة','الصف','الجمعة','المنافقون','التغابن','الطلاق','التحريم'],
+    23:['الملك','القلم','الحاقة','المعارج','نوح','الجن','المزمل','المدثر','القيامة','الإنسان','المرسلات'],
+    24:['النبأ','النازعات','عبس','التكوير','الانفطار','المطففين','الانشقاق','البروج','الطارق','الأعلى','الغاشية'],
+    25:['الفجر','البلد','الشمس','الليل','الضحى','الشرح','التين','العلق','القدر','البينة','الزلزلة'],
+    26:['العاديات','القارعة','التكاثر','العصر','الهمزة','الفيل','قريش','الماعون','الكوثر','الكافرون','النصر','المسد','الإخلاص','الفلق','الناس'],
+    27:['الفجر'],28:['المجادلة(ج)'],29:['الملك(ج)'],30:['النبأ(ج)'],
+  };
+
+  el.innerHTML = `
+    <!-- Student banner -->
+    <div style="display:flex;align-items:center;gap:12px;background:var(--surface);
+         border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--emerald-glow);
+           color:var(--emerald-light);border:2px solid var(--emerald-mid);
+           display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800">
+        ${s.name.charAt(0)}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.95rem">${s.name}</div>
+        <div style="font-size:.72rem;color:var(--text-muted)">${isEn?'Memorization Map':'خريطة الحفظ'} · ${pct}% ${isEn?'complete':'مكتمل'}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:1.6rem;font-weight:900;color:var(--emerald-light)">${pct}%</div>
+        <div style="font-size:.65rem;color:var(--text-muted)">${s.pages}/${s.totalPages}</div>
+      </div>
+    </div>
+
+    <!-- Summary pills -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      ${[
+        ['✅', done, isEn?'Complete':'مكتمل', 'var(--emerald)'],
+        ['🔶', partial, isEn?'Partial':'جزئي', 'var(--gold-light)'],
+        ['⬜', 30-done-partial, isEn?'Remaining':'متبقي', 'var(--text-muted)'],
+      ].map(([ic,cnt,lbl,col])=>`
+        <div style="flex:1;min-width:80px;background:var(--surface);border:1px solid var(--border);
+             border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:.9rem">${ic}</div>
+          <div style="font-size:1.2rem;font-weight:900;color:${col}">${cnt}</div>
+          <div style="font-size:.68rem;color:var(--text-muted)">${lbl}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Interactive juz grid -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title"><span class="ct-icon">🗺️</span> ${isEn?'Interactive Juz Map — tap any juz for details':'خريطة الأجزاء التفاعلية — اضغط على أي جزء للتفاصيل'}</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:12px" id="juzMapGrid"></div>
+      <div style="display:flex;gap:12px;font-size:.72rem;color:var(--text-muted)">
+        <span>✅ ${isEn?'Complete (≥20 pages)':'مكتمل (٢٠+ صفحة)'}</span>
+        <span>🔶 ${isEn?'Partial':'جزئي'}</span>
+        <span>⬜ ${isEn?'Not started':'لم يبدأ'}</span>
+      </div>
+    </div>
+
+    <!-- Selected juz detail -->
+    <div id="juzDetail" class="card" style="display:none"></div>
+
+    <!-- Progress by quarter -->
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">📊</span> ${isEn?'Progress by Quarter':'التقدم بالأرباع'}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+        ${['الربع الأول (١-٧)','الربع الثاني (٨-١٥)','الربع الثالث (١٦-٢٢)','الربع الرابع (٢٣-٣٠)'].map((qLabel,qi)=>{
+          const qJuz = juz.slice(qi*7+1, qi*7+8);
+          const qDone = qJuz.filter(v=>v>=20).length;
+          const qPct  = Math.round(qDone/7*100);
+          const labels = isEn?['Q1 (1-7)','Q2 (8-15)','Q3 (16-22)','Q4 (23-30)']:['الربع الأول','الربع الثاني','الربع الثالث','الربع الرابع'];
+          return `
+          <div style="background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border)">
+            <div style="font-size:.76rem;font-weight:700;margin-bottom:8px;color:var(--text)">${labels[qi]}</div>
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-bottom:4px">
+              <span>${qDone}/7 ${isEn?'juz':'جزء'}</span>
+              <span style="color:var(--emerald-light);font-weight:700">${qPct}%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill ${qPct<30?'red':''}" style="width:${qPct}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  // Build interactive juz grid
+  const grid = document.getElementById('juzMapGrid');
+  if (!grid) return;
+  juz.forEach((pages,i)=>{
+    const juzNum = i+1;
+    const pct2   = Math.round(pages/pagesPerJuz*100);
+    const isDone = pages>=20;
+    const isPartial = pages>0&&pages<20;
+    const cell = document.createElement('div');
+    cell.style.cssText = [
+      'aspect-ratio:1','border-radius:10px','cursor:pointer','display:flex',
+      'flex-direction:column','align-items:center','justify-content:center',
+      'font-size:.7rem','font-weight:800','transition:all .2s','position:relative',
+      `background:${isDone?'var(--emerald)':isPartial?'rgba(212,160,23,.25)':'var(--surface2)'}`,
+      `border:2px solid ${isDone?'var(--emerald-mid)':isPartial?'var(--gold-light)':'var(--border)'}`,
+      `color:${isDone?'#fff':isPartial?'var(--gold-light)':'var(--text-muted)'}`,
+    ].join(';');
+    cell.innerHTML = `
+      <div style="font-size:.95rem;font-weight:900">${juzNum}</div>
+      ${isDone?`<div style="font-size:.55rem;opacity:.85">✓ ${isEn?'done':'مكتمل'}</div>`
+       :isPartial?`<div style="font-size:.55rem">${pct2}%</div>`
+       :`<div style="font-size:.55rem">${isEn?'not started':'لم يبدأ'}</div>`}
+    `;
+    cell.addEventListener('mouseenter',()=>{ cell.style.transform='scale(1.08)'; cell.style.zIndex='2'; });
+    cell.addEventListener('mouseleave',()=>{ cell.style.transform='scale(1)'; cell.style.zIndex='1'; });
+    cell.addEventListener('click',()=>{
+      // Highlight selected
+      grid.querySelectorAll('div').forEach(c=>c.style.outline='none');
+      cell.style.outline='3px solid var(--gold-light)';
+      // Show detail
+      showJuzDetail(juzNum, pages, pct2, JUZ_SURAHS[juzNum]||[], isEn);
+    });
+    grid.appendChild(cell);
+  });
+};
+
+function showJuzDetail(juzNum, pages, pct, surahs, isEn) {
+  const det = document.getElementById('juzDetail');
+  if (!det) return;
+  det.style.display = 'block';
+  const isDone = pages>=20;
+  const isPartial = pages>0&&pages<20;
+  det.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div style="width:56px;height:56px;border-radius:14px;flex-shrink:0;
+           background:${isDone?'var(--emerald)':isPartial?'rgba(212,160,23,.2)':'var(--surface2)'};
+           border:2px solid ${isDone?'var(--emerald-mid)':isPartial?'var(--gold-light)':'var(--border)'};
+           display:flex;align-items:center;justify-content:center;
+           font-size:1.5rem;font-weight:900;color:${isDone?'#fff':isPartial?'var(--gold-light)':'var(--text-muted)'}">
+        ${juzNum}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:1rem;font-weight:800">${isEn?'Juz ':'الجزء '}${juzNum}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">
+          ${pages} / 20 ${isEn?'pages':'صفحة'} · ${pct}%
+        </div>
+        <div style="margin-top:6px">
+          <span class="badge ${isDone?'green':isPartial?'gold':'gray'}">
+            ${isDone?(isEn?'✅ Complete':'✅ مكتمل'):isPartial?(isEn?'🔶 Partial':'🔶 جزئي'):(isEn?'⬜ Not Started':'⬜ لم يبدأ')}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="progress-bar" style="margin-bottom:10px">
+      <div class="progress-fill ${pages<5&&!isDone?'red':''}" style="width:${Math.min(100,pct)}%;transition:width 0.6s ease"></div>
+    </div>
+    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:8px;font-weight:600">
+      ${isEn?'Surahs in this Juz:':'السور في هذا الجزء:'}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">
+      ${(surahs||[]).map(s=>`
+        <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+             padding:3px 10px;font-size:.72rem;font-weight:600">${s}</span>`).join('')}
+    </div>
+    ${!isDone&&pages>0?`
+      <div style="margin-top:10px;font-size:.76rem;color:var(--gold-light);background:var(--gold-pale);
+           border-radius:8px;padding:8px 12px;line-height:1.7">
+        💡 ${isEn
+          ? `Keep going! ${20-pages} more pages to complete this Juz.`
+          : `واصل المراجعة! ${20-pages} صفحات متبقية لإتمام هذا الجزء.`}
+      </div>`:''
+    }
+    ${isDone?`
+      <div style="margin-top:10px;font-size:.76rem;color:var(--emerald-light);background:var(--emerald-glow);
+           border-radius:8px;padding:8px 12px">
+        🎉 ${isEn?'This Juz is fully memorized! Excellent!':'تم حفظ هذا الجزء بالكامل! أحسنت!'}
+      </div>`:''
+    }
+  `;
+  det.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// =============================================
+// 📝 MEMORIZATION EXAM
+// =============================================
+pages['p-exam'] = function(el) {
+  const isEn = currentLang==='en';
+  const s = DB.students.find(st=>st.id===(currentUser.studentId||1))||DB.students[0];
+  if (!s) { el.innerHTML=`<div style="text-align:center;padding:60px;color:var(--text-muted)">${t('noStudents')}</div>`; return; }
+
+  // Get memorized surahs + current surah
+  const availableSurahs = (s.memorized||[]).length > 0
+    ? [...s.memorized, s.currentSurah].filter((v,i,a)=>a.indexOf(v)===i)
+    : [s.currentSurah];
+
+  el.innerHTML = `
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,var(--emerald),var(--emerald-mid));
+         border-radius:14px;padding:20px 24px;margin-bottom:20px;color:#fff;position:relative;overflow:hidden">
+      <div style="position:absolute;left:-20px;bottom:-20px;width:100px;height:100px;
+           border-radius:50%;background:rgba(255,255,255,.07)"></div>
+      <div style="position:relative">
+        <div style="font-size:1.15rem;font-weight:900;margin-bottom:4px">📝 ${isEn?'Memorization Exam':'اختبار الحفظ'}</div>
+        <div style="font-size:.8rem;opacity:.88">${isEn?'Test your child\'s memorization — select surah and start':'اختبر حفظ ابنك — اختر السورة وابدأ'}</div>
+        <div style="margin-top:8px;font-size:.76rem;opacity:.8">👤 ${s.name}</div>
+      </div>
+    </div>
+
+    <!-- Exam setup card -->
+    <div class="card" id="examSetup" style="margin-bottom:16px">
+      <div class="card-title"><span class="ct-icon">⚙️</span> ${isEn?'Exam Settings':'إعدادات الاختبار'}</div>
+
+      <div class="field">
+        <label>${isEn?'Select Surah *':'اختر السورة *'}</label>
+        <select id="examSurah" style="width:100%">
+          <option value="">${isEn?'— Choose surah —':'— اختر سورة —'}</option>
+          ${availableSurahs.map(sur=>`<option value="${sur}">${sur}</option>`).join('')}
+          <option value="custom">${isEn?'Other surah...':'سورة أخرى...'}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>${isEn?'Exam Type':'نوع الاختبار'}</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${[
+            ['recite', '🎙️', isEn?'Recitation Test':'اختبار التلاوة', isEn?'Child recites by memory':'الطالب يتلو من حفظه'],
+            ['complete', '✍️', isEn?'Completion Test':'اختبار الإكمال', isEn?'Parent reads start, child completes':'ولي الأمر يبدأ والطالب يكمل'],
+          ].map(([v,ic,lbl,desc])=>`
+            <label id="examType-${v}" style="display:flex;align-items:flex-start;gap:8px;padding:10px;
+                   border-radius:10px;border:2px solid var(--border);cursor:pointer;
+                   background:var(--surface2);transition:all .2s"
+                   onclick="selectExamType('${v}')">
+              <input type="radio" name="examType" value="${v}" style="margin-top:2px;flex-shrink:0">
+              <div>
+                <div style="font-size:.84rem;font-weight:700">${ic} ${lbl}</div>
+                <div style="font-size:.7rem;color:var(--text-muted);margin-top:2px">${desc}</div>
+              </div>
+            </label>`).join('')}
+        </div>
+      </div>
+
+      <div class="field">
+        <label>${isEn?'Difficulty':'مستوى الصعوبة'}</label>
+        <div style="display:flex;gap:8px">
+          ${[['easy','🟢',isEn?'Easy':'سهل'],['medium','🟡',isEn?'Medium':'متوسط'],['hard','🔴',isEn?'Hard':'صعب']].map(([v,ic,lbl])=>`
+            <button id="diff-${v}" class="btn btn-sm" style="flex:1;transition:all .2s"
+                    onclick="selectDifficulty('${v}')">${ic} ${lbl}</button>`).join('')}
+        </div>
+      </div>
+
+      <button class="btn btn-solid" style="width:100%;margin-top:4px"
+              onclick="startExam()">🚀 ${isEn?'Start Exam':'بدء الاختبار'}</button>
+    </div>
+
+    <!-- Exam area (hidden initially) -->
+    <div id="examArea" style="display:none"></div>
+
+    <!-- Past results -->
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">📊</span> ${isEn?'Past Exam Results':'نتائج الاختبارات السابقة'}</div>
+      ${(DB.rewards[s.id]?.exams||[]).length===0
+        ? `<div style="text-align:center;padding:24px;color:var(--text-muted)">
+             <div style="font-size:2rem;margin-bottom:6px">📝</div>
+             <div>${isEn?'No exams yet — start the first one!':'لا اختبارات بعد — ابدأ أول اختبار!'}</div>
+           </div>`
+        : (DB.rewards[s.id]?.exams||[]).slice(0,5).map(ex=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+              <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;
+                   background:${ex.score>=80?'var(--emerald-glow)':ex.score>=60?'var(--gold-pale)':'var(--red-bg)'};
+                   border:2px solid ${ex.score>=80?'var(--emerald-mid)':ex.score>=60?'var(--border-gold)':'rgba(204,53,53,.3)'};
+                   display:flex;align-items:center;justify-content:center;
+                   font-size:.9rem;font-weight:900;
+                   color:${ex.score>=80?'var(--emerald-light)':ex.score>=60?'var(--gold-light)':'var(--red)'}">
+                ${ex.score}%
+              </div>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:.88rem">${ex.surah}</div>
+                <div style="font-size:.72rem;color:var(--text-muted)">${ex.date} · ${ex.type==='recite'?(isEn?'Recitation':'تلاوة'):(isEn?'Completion':'إكمال')}</div>
+              </div>
+              <span class="badge ${ex.score>=80?'green':ex.score>=60?'gold':'red'}">
+                ${ex.score>=80?(isEn?'Excellent':'ممتاز'):ex.score>=60?(isEn?'Good':'جيد'):(isEn?'Needs Work':'يحتاج مراجعة')}
+              </span>
+            </div>`).join('')}
+    </div>
+  `;
+
+  // Init selections
+  selectDifficulty('medium');
+  selectExamType('recite');
+};
+
+window.selectExamType = function(v) {
+  ['recite','complete'].forEach(t=>{
+    const el=document.getElementById('examType-'+t);
+    if(el){ el.style.borderColor = t===v?'var(--emerald-mid)':'var(--border)'; el.style.background = t===v?'var(--emerald-glow)':'var(--surface2)'; }
+  });
+  window._examType = v;
+};
+
+window.selectDifficulty = function(v) {
+  const colors={easy:'var(--emerald)',medium:'var(--gold-light)',hard:'var(--red)'};
+  ['easy','medium','hard'].forEach(d=>{
+    const el=document.getElementById('diff-'+d);
+    if(el){ el.style.background = d===v?colors[d]:'var(--surface2)'; el.style.color = d===v?'#fff':'var(--text)'; el.style.border = `1px solid ${d===v?colors[d]:'var(--border)'}`; }
+  });
+  window._examDiff = v;
+};
+
+window._examState = null;
+
+window.startExam = function() {
+  const isEn = currentLang==='en';
+  const surah = document.getElementById('examSurah')?.value;
+  if (!surah) { showToast('⚠️ '+(isEn?'Please select a surah':'اختر السورة أولاً')); return; }
+
+  const surahObj = QURAN_SURAHS.find(q=>q.name===surah);
+  const totalAyah = surahObj?.ayah || 7;
+  const diff = window._examDiff || 'medium';
+  const type = window._examType || 'recite';
+
+  // Generate questions based on difficulty
+  const numQ = diff==='easy'?3:diff==='medium'?5:8;
+  const questions = [];
+
+  if (type==='recite') {
+    // Ask to recite specific ayah ranges
+    for(let i=0;i<numQ;i++){
+      const from = Math.floor(Math.random()*(totalAyah-1))+1;
+      const len  = diff==='easy'?2:diff==='medium'?3:5;
+      const to   = Math.min(from+len-1, totalAyah);
+      questions.push({ q: `اتلُ من سورة ${surah} من آية ${from} إلى آية ${to}`, from, to, surah, type:'recite' });
+    }
+  } else {
+    // Completion: parent reads first 3 words, child completes
+    const starterAyahs = ['بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ','قُلْ هُوَ اللَّهُ أَحَدٌ','الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ','إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ','قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ'];
+    for(let i=0;i<numQ;i++){
+      const ayah = Math.floor(Math.random()*totalAyah)+1;
+      const starter = starterAyahs[i%starterAyahs.length];
+      questions.push({ q:`${isEn?'From surah':'من سورة'} ${surah} ${isEn?'verse':'آية'} ${ayah}: "${starter}..."`, ayah, surah, type:'complete', starter });
+    }
+  }
+
+  window._examState = { surah, type, diff, questions, current:0, scores:[], startTime:Date.now() };
+  document.getElementById('examSetup').style.display='none';
+  showExamQuestion();
+};
+
+function showExamQuestion() {
+  const isEn = currentLang==='en';
+  const state = window._examState;
+  if (!state) return;
+  const area = document.getElementById('examArea');
+  if (!area) return;
+  area.style.display='block';
+
+  if (state.current >= state.questions.length) {
+    // Show results
+    showExamResults();
+    return;
+  }
+
+  const q = state.questions[state.current];
+  const qNum = state.current+1;
+  const totalQ = state.questions.length;
+  const progPct = Math.round((state.current/totalQ)*100);
+
+  area.innerHTML = `
+    <!-- Progress -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:8px">
+        <span style="font-weight:700">${isEn?'Question':'السؤال'} ${qNum} ${isEn?'of':'من'} ${totalQ}</span>
+        <span style="color:var(--emerald-light);font-weight:700">${progPct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progPct}%"></div></div>
+    </div>
+
+    <!-- Question card -->
+    <div class="card" style="margin-bottom:16px;border:2px solid var(--emerald-mid)">
+      <div style="text-align:center;padding:8px 0 16px">
+        <div style="font-size:2.5rem;margin-bottom:8px">📖</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--text);line-height:1.7;
+             font-family:'Amiri',serif;direction:rtl">${q.q}</div>
+      </div>
+      ${q.type==='recite'?`
+        <div style="background:var(--emerald-glow);border-radius:10px;padding:12px;text-align:center;
+             font-size:.82rem;color:var(--emerald-light);line-height:1.7">
+          🎙️ ${isEn
+            ? `Ask your child to recite Surah ${q.surah} from verse ${q.from} to verse ${q.to} by memory`
+            : `اطلب من ابنك أن يتلو سورة ${q.surah} من آية ${q.from} إلى آية ${q.to} عن ظهر قلب`}
+        </div>`:
+        `<div style="background:var(--gold-pale);border-radius:10px;padding:12px;text-align:center;
+             font-size:.82rem;color:var(--gold-light);line-height:1.7">
+          ✍️ ${isEn
+            ? `Read the beginning to your child and ask them to complete it`
+            : `اقرأ البداية لابنك واطلب منه إكمالها`}
+        </div>`}
+    </div>
+
+    <!-- Rating -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title"><span class="ct-icon">⭐</span> ${isEn?'Rate the performance':'قيّم الأداء'}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        ${[
+          [100,'🌟',isEn?'Excellent':'ممتاز','green'],
+          [80,'✅',isEn?'Good':'جيد','blue'],
+          [60,'🟡',isEn?'Average':'متوسط','gold'],
+          [30,'❌',isEn?'Needs Review':'يحتاج مراجعة','red'],
+        ].map(([score,ic,lbl,c])=>`
+          <button class="btn btn-sm" onclick="rateAnswer(${score})"
+                  style="flex-direction:column;gap:4px;padding:12px 4px;height:auto;
+                         transition:all .2s;font-size:.78rem"
+                  onmouseenter="this.style.transform='scale(1.05)'"
+                  onmouseleave="this.style.transform='scale(1)'">
+            <span style="font-size:1.6rem">${ic}</span>
+            <span style="font-weight:700">${lbl}</span>
+          </button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+window.rateAnswer = function(score) {
+  const state = window._examState;
+  if (!state) return;
+  state.scores.push(score);
+  state.current++;
+  showExamQuestion();
+};
+
+function showExamResults() {
+  const isEn = currentLang==='en';
+  const state = window._examState;
+  const s = DB.students.find(st=>st.id===(currentUser.studentId||1))||DB.students[0];
+  const avgScore = Math.round(state.scores.reduce((a,v)=>a+v,0)/state.scores.length);
+  const duration = Math.round((Date.now()-state.startTime)/1000);
+  const area = document.getElementById('examArea');
+  if (!area) return;
+
+  const medal = avgScore>=90?'🥇':avgScore>=75?'🥈':avgScore>=60?'🥉':'📚';
+  const grade = avgScore>=90?(isEn?'Excellent':'ممتاز'):avgScore>=75?(isEn?'Very Good':'جيد جداً'):avgScore>=60?(isEn?'Good':'جيد'):(isEn?'Needs Review':'يحتاج مراجعة');
+  const color = avgScore>=75?'var(--emerald-light)':avgScore>=60?'var(--gold-light)':'var(--red)';
+
+  // Save result
+  if (!DB.rewards[s.id]) DB.rewards[s.id] = {bonus:0,exams:[]};
+  if (!DB.rewards[s.id].exams) DB.rewards[s.id].exams = [];
+  DB.rewards[s.id].exams.unshift({
+    surah: state.surah,
+    type: state.type,
+    score: avgScore,
+    date: new Date().toLocaleDateString('ar-SA'),
+    diff: state.diff
+  });
+  // Add points for exam
+  DB.rewards[s.id].bonus = (DB.rewards[s.id].bonus||0) + Math.round(avgScore/10);
+  saveDB();
+
+  area.innerHTML = `
+    <div class="card" style="text-align:center;margin-bottom:16px">
+      <div style="font-size:4rem;margin-bottom:12px">${medal}</div>
+      <div style="font-size:2rem;font-weight:900;color:${color}">${avgScore}%</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--text);margin-top:4px">${grade}</div>
+      <div style="font-size:.78rem;color:var(--text-muted);margin-top:6px">
+        ${isEn?'Surah':'سورة'} ${state.surah} · ${state.scores.length} ${isEn?'questions':'أسئلة'} · ${duration}${isEn?'s':'ث'}
+      </div>
+      <div style="margin:16px 0">
+        ${state.scores.map((sc,i)=>`
+          <span style="display:inline-block;width:32px;height:32px;border-radius:50%;margin:3px;
+               background:${sc>=80?'var(--emerald-glow)':sc>=60?'var(--gold-pale)':'var(--red-bg)'};
+               border:2px solid ${sc>=80?'var(--emerald-mid)':sc>=60?'var(--border-gold)':'rgba(204,53,53,.3)'};
+               color:${sc>=80?'var(--emerald-light)':sc>=60?'var(--gold-light)':'var(--red)'};
+               font-size:.65rem;font-weight:800;line-height:28px">${sc}%</span>`).join('')}
+      </div>
+      <div style="background:${avgScore>=75?'var(--emerald-glow)':'var(--gold-pale)'};border-radius:10px;padding:10px;
+           font-size:.82rem;color:${avgScore>=75?'var(--emerald-light)':'var(--gold-light)'};line-height:1.7;margin-bottom:16px">
+        ${avgScore>=90
+          ? (isEn?'🌟 Excellent! Your child has mastered this surah brilliantly!':'🌟 ممتاز! ابنك حفظ هذه السورة بشكل رائع!')
+          : avgScore>=75
+          ? (isEn?'✅ Very good performance! A little more practice and it will be perfect.':'✅ أداء جيد جداً! قليل من المراجعة ويصبح مثالياً.')
+          : avgScore>=60
+          ? (isEn?'📚 Good effort! Focus on the weak parts and review them daily.':'📚 جهد جيد! ركّز على الأجزاء الضعيفة وراجعها يومياً.')
+          : (isEn?'💪 Keep practicing! Daily review is the key to strong memorization.':'💪 واصل المراجعة! التكرار اليومي هو مفتاح الحفظ القوي.')}
+      </div>
+      <div style="font-size:.78rem;color:var(--emerald-light);font-weight:700;margin-bottom:14px">
+        +${Math.round(avgScore/10)} ⭐ ${isEn?'points added to rewards!':'نقاط أُضيفت للمكافآت!'}
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-solid" style="flex:1" onclick="window._examState=null;document.getElementById('examSetup').style.display='block';document.getElementById('examArea').style.display='none';navigateTo('p-exam')">
+          🔄 ${isEn?'New Exam':'اختبار جديد'}
+        </button>
+        <button class="btn btn-gold" style="flex:1" onclick="navigateTo('rewards')">
+          🏆 ${isEn?'View Rewards':'عرض المكافآت'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 pages['p-notifications'] = function(el) {
   const s = DB.students.find(st=>st.id===(currentUser.studentId||1))||DB.students[0];
   const teacher = s ? DB.users.find(u=>u.id===s.teacher) : null;
@@ -6669,13 +7525,13 @@ window.submitSendNotif = function() {
 
 
 // ==============================
+// ==============================
 // STUDENT PDF EXPORT
 // ==============================
 window.exportStudentPDF = function(id) {
   const s       = DB.students.find(st => st.id === id);
-  if (!s) return;
+  if (!s) { showToast('⚠️ الطالب غير موجود'); return; }
   const teacher = DB.users.find(u => u.id === s.teacher);
-  const circle  = DB.circles.find(c => c.name === s.circle);
   const pct     = Math.round(s.pages / s.totalPages * 100);
   const totalNew  = (s.sessions||[]).reduce((a,ses)=>a+ses.new, 0);
   const weeklyAyah  = s.plan.dailyAyah * (7 - s.plan.reviewDays);
@@ -6684,264 +7540,780 @@ window.exportStudentPDF = function(id) {
   const monthsLeft  = Math.ceil(daysLeft / 30);
   const timeLabel   = daysLeft === 0 ? 'مكتمل ✅' : monthsLeft > 12 ? Math.ceil(monthsLeft/12)+' سنة تقريباً' : monthsLeft+' شهر تقريباً';
   const today       = new Date().toLocaleDateString('ar-SA', {year:'numeric',month:'long',day:'numeric'});
+  const isEn        = currentLang === 'en';
 
-  // Build juz grid HTML
+  // Juz grid
   const juz = s.juzProgress || Array(30).fill(0);
   const juzGrid = juz.map((pages, i) => {
-    const p   = Math.round(pages / (604/30) * 100);
-    const bg  = pages >= 20 ? '#1a9e65' : pages > 0 ? '#b88a0a' : '#ddd';
-    const col = pages >= 20 ? '#fff' : pages > 0 ? '#fff' : '#999';
-    return `<div style="width:28px;height:28px;border-radius:4px;background:${bg};color:${col};
+    const bg  = pages >= 20 ? '#1a9e65' : pages > 0 ? '#b88a0a' : '#e8e8e8';
+    const col = pages >= 20 || pages > 0 ? '#fff' : '#aaa';
+    return `<div style="width:30px;height:30px;border-radius:5px;background:${bg};color:${col};
                display:inline-flex;align-items:center;justify-content:center;
-               font-size:9px;font-weight:700;margin:2px">${i+1}</div>`;
+               font-size:9.5px;font-weight:800;margin:2px;box-shadow:0 1px 3px rgba(0,0,0,.1)">${i+1}</div>`;
   }).join('');
 
-  // Sessions table rows
-  const sessionRows = (s.sessions||[]).slice(0,8).map(ses => `
-    <tr>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:11px">${ses.date}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:11px;color:#1a9e65;font-weight:700">+${ses.new}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:11px">${ses.review}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:11px">${ses.surah||'—'}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:11px">${ses.grade}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:11px;color:#888">${ses.notes||'—'}</td>
+  // Sessions rows
+  const sessionRows = (s.sessions||[]).slice(0,10).map((ses,idx) => `
+    <tr style="background:${idx%2===0?'#f8fdf9':'#fff'}">
+      <td style="padding:6px 10px;border-bottom:1px solid #e8f0ea;font-size:11.5px">${ses.date}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e8f0ea;font-size:11.5px;color:#1a9e65;font-weight:800">+${ses.new}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e8f0ea;font-size:11.5px;color:#2068b8">${ses.review}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e8f0ea;font-size:11.5px;color:#b88a0a">${ses.surah||'—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e8f0ea;font-size:11.5px">
+        <span style="background:${ses.grade==='ممتاز'||ses.grade==='Excellent'?'#e8f5ee':ses.grade==='ضعيف'||ses.grade==='Fail'?'#feeaea':'#fff8e0'};
+               color:${ses.grade==='ممتاز'||ses.grade==='Excellent'?'#1a9e65':ses.grade==='ضعيف'||ses.grade==='Fail'?'#cc3535':'#b88a0a'};
+               border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">${ses.grade}</span>
+      </td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e8f0ea;font-size:11px;color:#888">${ses.notes||'—'}</td>
     </tr>`).join('');
+
+  // Progress bar SVG
+  const barW = Math.round(pct * 3.8);
+
+  const instituteName = INSTITUTE?.name || 'مركز تحفيظ القرآن الكريم';
+  const instituteCity = INSTITUTE?.city || '';
 
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>ملف الطالب — ${s.name}</title>
+<title>${isEn?'Student Report':'تقرير الطالب'} — ${s.name}</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Tajawal',sans-serif; background:#fff; color:#1a1a1a; direction:rtl; padding:32px; }
-  @page { size:A4; margin:20mm; }
-  @media print {
-    body { padding:0; }
-    .no-print { display:none !important; }
-    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Tajawal',sans-serif;background:#fff;color:#1a1a1a;direction:rtl;padding:28px 32px}
+  @page{size:A4;margin:15mm}
+  @media print{body{padding:0}.no-print{display:none!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
 
-  /* Header */
-  .header { background:linear-gradient(135deg,#0e4228,#1a9e65); border-radius:12px; padding:24px 28px; margin-bottom:20px; color:#fff; display:flex; align-items:center; gap:16px; }
-  .header-avatar { width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:900; flex-shrink:0; }
-  .header-info h1 { font-size:1.3rem; font-weight:900; }
-  .header-info p { font-size:.78rem; opacity:.88; margin-top:3px; }
-  .header-pct { text-align:center; margin-right:auto; }
-  .header-pct .pct-val { font-size:2rem; font-weight:900; }
-  .header-pct .pct-lbl { font-size:.62rem; opacity:.8; }
+  .header{background:linear-gradient(135deg,#0a3320,#1a9e65);border-radius:14px;padding:22px 26px;margin-bottom:18px;color:#fff;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden}
+  .header::after{content:'';position:absolute;left:-40px;bottom:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.07)}
+  .avatar{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:1.7rem;font-weight:900;flex-shrink:0}
+  .hinfo h1{font-size:1.35rem;font-weight:900;margin-bottom:3px}
+  .hinfo p{font-size:.76rem;opacity:.88;line-height:1.7}
+  .hpct{margin-right:auto;text-align:center;background:rgba(255,255,255,.15);border-radius:12px;padding:10px 18px;border:1px solid rgba(255,255,255,.25)}
+  .hpct .pv{font-size:2.2rem;font-weight:900;line-height:1}
+  .hpct .pl{font-size:.64rem;opacity:.82;margin-top:3px}
 
-  /* Center title */
-  .center-name { font-family:'Amiri',serif; font-size:1.2rem; text-align:center; color:#0e4228; margin-bottom:20px; border-bottom:2px solid #1a9e65; padding-bottom:8px; }
-  .doc-date { text-align:center; font-size:.75rem; color:#888; margin-top:4px; }
+  .inst-header{text-align:center;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #1a9e65}
+  .inst-name{font-family:'Amiri',serif;font-size:1.15rem;color:#0a3320;font-weight:700}
+  .inst-sub{font-size:.72rem;color:#888;margin-top:3px}
 
-  /* Section */
-  .section { margin-bottom:18px; }
-  .section-title { font-size:.9rem; font-weight:800; color:#0e4228; margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid #e0ece5; display:flex; align-items:center; gap:6px; }
+  .sec{margin-bottom:16px}
+  .sec-title{font-size:.88rem;font-weight:800;color:#0a3320;margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid #e0ece5;display:flex;align-items:center;gap:6px}
 
-  /* Stats grid */
-  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  .stat-card { background:#f0f8f4; border-radius:10px; padding:10px; text-align:center; border:1px solid #c8e0d4; }
-  .stat-val { font-size:1.3rem; font-weight:900; color:#1a9e65; }
-  .stat-lbl { font-size:.65rem; color:#666; margin-top:2px; }
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{background:#f0f8f4;border-radius:10px;padding:10px;text-align:center;border:1px solid #c8e0d4}
+  .sv{font-size:1.4rem;font-weight:900;color:#1a9e65}
+  .sl{font-size:.63rem;color:#666;margin-top:2px}
 
-  /* Plan grid */
-  .plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .plan-card { background:#fffbf0; border:1px solid #e8d89a; border-radius:10px; padding:12px 14px; display:flex; align-items:center; gap:10px; }
-  .plan-icon { width:36px; height:36px; border-radius:9px; background:#fff3cc; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
-  .plan-num { font-size:1.4rem; font-weight:900; color:#b88a0a; }
-  .plan-desc { font-size:.7rem; color:#888; }
-  .plan-label { font-size:.78rem; font-weight:700; color:#333; }
+  .plan-card{background:#fffbf0;border:1px solid #e8d89a;border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px}
+  .pi{width:36px;height:36px;border-radius:9px;background:#fff3cc;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+  .pn{font-size:1.35rem;font-weight:900;color:#b88a0a}
+  .plab{font-size:.76rem;font-weight:700;color:#333}
+  .pdesc{font-size:.67rem;color:#888}
 
-  /* Weekly bar */
-  .week-bar-wrap { background:#f0f8f4; border-radius:10px; padding:12px 14px; border:1px solid #c8e0d4; margin-top:8px; }
-  .week-bar-track { height:8px; background:#ddd; border-radius:4px; overflow:hidden; margin:6px 0; }
-  .week-bar-fill { height:100%; background:linear-gradient(90deg,#0e4228,#1a9e65); border-radius:4px; }
-  .week-bar-labels { display:flex; justify-content:space-between; font-size:.65rem; color:#999; }
+  .bar-track{height:9px;background:#e0e0e0;border-radius:5px;overflow:hidden;margin:6px 0}
+  .bar-fill{height:100%;background:linear-gradient(90deg,#0a3320,#1a9e65);border-radius:5px}
 
-  /* Juz grid */
-  .juz-section { background:#f8fafa; border-radius:10px; padding:12px; border:1px solid #ddd; }
-  .juz-legend { display:flex; gap:12px; font-size:.7rem; color:#666; margin-top:8px; }
-  .juz-dot { width:10px; height:10px; border-radius:2px; display:inline-block; margin-left:4px; }
+  table{width:100%;border-collapse:collapse}
+  thead th{background:#1a9e65;color:#fff;padding:7px 10px;font-size:11.5px;font-weight:700;text-align:right}
+  tfoot td{background:#f0f8f4;font-weight:700;font-size:11px;padding:6px 10px;color:#0a3320}
 
-  /* Sessions table */
-  table { width:100%; border-collapse:collapse; }
-  thead th { background:#1a9e65; color:#fff; padding:6px 8px; font-size:11px; font-weight:700; text-align:right; }
-  tbody tr:nth-child(even) { background:#f5fdf8; }
+  .chip{display:inline-block;background:#e8f5ee;color:#0a3320;border:1px solid #c8e0d4;border-radius:14px;padding:3px 11px;font-size:.72rem;font-weight:600;margin:2px}
+  .note{background:#fff8e6;border:1px solid #e8d89a;border-radius:8px;padding:9px 12px;font-size:.77rem;color:#7a5800;margin-top:8px;line-height:1.7}
+  .warn{background:#fff0f0;border:1px solid #f5b8b8;border-radius:8px;padding:9px 12px;font-size:.77rem;color:#8a1818;margin-top:8px;line-height:1.7}
 
-  /* Surahs */
-  .surah-chip { display:inline-block; background:#e8f5ee; color:#0e4228; border:1px solid #c8e0d4; border-radius:14px; padding:3px 10px; font-size:.72rem; font-weight:600; margin:2px; }
+  .footer{margin-top:20px;padding-top:10px;border-top:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;font-size:.68rem;color:#aaa}
+  .seal{width:42px;height:42px;border-radius:50%;border:2px solid #1a9e65;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
 
-  /* Note box */
-  .note-box { background:#fff8e6; border:1px solid #e8d89a; border-radius:8px; padding:10px 12px; font-size:.78rem; color:#7a5800; margin-top:8px; }
-  .weak-box { background:#fff0f0; border:1px solid #f5b8b8; border-radius:8px; padding:10px 12px; font-size:.78rem; color:#8a1818; margin-top:8px; }
-
-  /* Print button */
-  .print-btn { position:fixed; bottom:24px; left:24px; background:#1a9e65; color:#fff; border:none; border-radius:10px; padding:12px 20px; font-family:'Tajawal',sans-serif; font-size:.95rem; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(26,158,101,.4); transition:all .2s; z-index:100; }
-  .print-btn:hover { opacity:.9; transform:translateY(-1px); }
+  .print-btn{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1a9e65;color:#fff;border:none;border-radius:12px;padding:13px 28px;font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(26,158,101,.45);transition:all .2s;z-index:999;display:flex;align-items:center;gap:8px}
+  .print-btn:hover{opacity:.92;transform:translateX(-50%) translateY(-2px)}
 </style>
 </head>
 <body>
 
-<button class="print-btn no-print" onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+<button class="print-btn no-print" onclick="window.print()">
+  🖨️ ${isEn?'Print / Save as PDF':'طباعة / حفظ كـ PDF'}
+</button>
 
-<!-- Header banner -->
+<!-- معلومات المؤسسة -->
+<div class="inst-header">
+  <div class="inst-name">☪️ ${instituteName}</div>
+  <div class="inst-sub">${isEn?'Student Report':'ملف الطالب الشهري'} &nbsp;·&nbsp; ${today} ${instituteCity?'&nbsp;·&nbsp;📍'+instituteCity:''}</div>
+</div>
+
+<!-- Header -->
 <div class="header">
-  <div class="header-avatar">${s.name.charAt(0)}</div>
-  <div class="header-info">
+  <div class="avatar">${s.photo?`<img src="${s.photo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover">`:s.name.charAt(0)}</div>
+  <div class="hinfo">
     <h1>${s.name}</h1>
-    <p>${s.circle} · المعلم: ${teacher?.name||'—'} · العمر: ${s.age} سنة</p>
-    <p style="margin-top:4px">
-      <span style="background:rgba(255,255,255,.18);border-radius:10px;padding:2px 10px;font-size:.7rem">
-        ${s.level}
-      </span>
-      ${s.weak ? '<span style="background:rgba(255,100,100,.3);border-radius:10px;padding:2px 10px;font-size:.7rem;margin-right:4px">⚠️ يحتاج دعم</span>' : ''}
+    <p>📚 ${s.circle} &nbsp;·&nbsp; 👨‍🏫 ${teacher?.name||'—'} &nbsp;·&nbsp; 🎂 ${s.age} ${isEn?'yrs':'سنة'}</p>
+    <p style="margin-top:5px">
+      <span style="background:rgba(255,255,255,.2);border-radius:8px;padding:2px 10px;font-size:.7rem;font-weight:700">${s.level}</span>
+      ${s.weak?'<span style="background:rgba(255,100,100,.3);border-radius:8px;padding:2px 10px;font-size:.7rem;margin-right:6px">⚠️ يحتاج دعم</span>':''}
     </p>
+    <p style="margin-top:6px;font-size:.72rem;opacity:.8">${isEn?'Current:':'الموضع الحالي:'} ${s.currentSurah} · ${isEn?'v.':'آية'} ${s.currentAyah}</p>
   </div>
-  <div class="header-pct">
-    <div class="pct-val">${pct}%</div>
-    <div class="pct-lbl">من القرآن</div>
-  </div>
-</div>
-
-<div class="center-name">
-  مركز تحفيظ القرآن الكريم — ملف الطالب
-  <div class="doc-date">تاريخ الاستخراج: ${today}</div>
-</div>
-
-<!-- Stats -->
-<div class="section">
-  <div class="section-title">📊 الإحصائيات العامة</div>
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-val">${s.pages}</div>
-      <div class="stat-lbl">صفحة محفوظة</div>
+  <div class="hpct">
+    <div class="pv">${pct}%</div>
+    <div class="pl">${isEn?'of Quran':'من القرآن'}</div>
+    <div style="margin-top:8px;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;width:80px">
+      <div style="height:100%;width:${pct}%;background:#fff;border-radius:3px"></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-val" style="color:${s.attendance>=90?'#1a9e65':s.attendance>=75?'#b88a0a':'#cc3535'}">${s.attendance}%</div>
-      <div class="stat-lbl">نسبة الحضور</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val">${totalNew}</div>
-      <div class="stat-lbl">آية محفوظة إجمالاً</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val">${(s.sessions||[]).length}</div>
-      <div class="stat-lbl">جلسة مسجلة</div>
-    </div>
-  </div>
-  <div class="section-title" style="margin-top:10px">📖 الموضع الحالي</div>
-  <div style="background:#f0f8f4;border-radius:8px;padding:10px 14px;border:1px solid #c8e0d4;font-size:.85rem">
-    السورة الحالية: <strong style="color:#1a9e65">${s.currentSurah}</strong> · آية <strong>${s.currentAyah}</strong>
-    &nbsp;|&nbsp; آخر جلسة: ${s.lastSession}
+    <div style="font-size:.6rem;opacity:.7;margin-top:4px">${s.pages} / ${s.totalPages} ${isEn?'pages':'صفحة'}</div>
   </div>
 </div>
 
-<!-- Plan -->
-<div class="section">
-  <div class="section-title">📝 خطة الحفظ</div>
-  <div class="plan-grid">
-    <div class="plan-card">
-      <div class="plan-icon">📖</div>
-      <div>
-        <div class="plan-num">${s.plan.dailyAyah}</div>
-        <div class="plan-label">آيات جديدة يومياً</div>
-        <div class="plan-desc">~${Math.round(s.plan.dailyAyah/15*10)/10} صفحة/يوم</div>
-      </div>
-    </div>
-    <div class="plan-card">
-      <div class="plan-icon">🔁</div>
-      <div>
-        <div class="plan-num">${s.plan.reviewDays}</div>
-        <div class="plan-label">أيام مراجعة أسبوعياً</div>
-        <div class="plan-desc">${7-s.plan.reviewDays} أيام حفظ جديد</div>
-      </div>
-    </div>
-    <div class="plan-card">
-      <div class="plan-icon">🎯</div>
-      <div>
-        <div class="plan-label">الهدف الأسبوعي</div>
-        <div style="font-size:1rem;font-weight:800;color:#b88a0a;margin-top:2px">${s.plan.weeklyGoal}</div>
-        <div class="plan-desc">~${weeklyAyah} آية · ${weeklyPages} صفحة</div>
-      </div>
-    </div>
-    <div class="plan-card">
-      <div class="plan-icon">⏳</div>
-      <div>
-        <div class="plan-label">الوقت المتوقع للختم</div>
-        <div style="font-size:1rem;font-weight:800;color:#c05e18;margin-top:2px">${timeLabel}</div>
-        <div class="plan-desc">${daysLeft > 0 ? daysLeft+' يوم متبقٍّ' : 'بارك الله فيه'}</div>
-      </div>
-    </div>
+<!-- الإحصائيات -->
+<div class="sec">
+  <div class="sec-title">📊 ${isEn?'General Statistics':'الإحصائيات العامة'}</div>
+  <div class="grid4">
+    <div class="stat"><div class="sv">${s.pages}</div><div class="sl">${isEn?'Pages memorized':'صفحة محفوظة'}</div></div>
+    <div class="stat"><div class="sv" style="color:${s.attendance>=90?'#1a9e65':s.attendance>=75?'#b88a0a':'#cc3535'}">${s.attendance}%</div><div class="sl">${isEn?'Attendance':'نسبة الحضور'}</div></div>
+    <div class="stat"><div class="sv">${totalNew}</div><div class="sl">${isEn?'Total verses':'آية محفوظة إجمالاً'}</div></div>
+    <div class="stat"><div class="sv">${(s.sessions||[]).length}</div><div class="sl">${isEn?'Sessions':'جلسة مسجلة'}</div></div>
   </div>
-
-  <div class="week-bar-wrap">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div style="font-size:.78rem;font-weight:700">التقدم الأسبوعي المتوقع</div>
-      <div style="font-size:.78rem;color:#1a9e65;font-weight:700">${weeklyAyah} آية · ${weeklyPages} صفحة/أسبوع</div>
-    </div>
-    <div class="week-bar-track">
-      <div class="week-bar-fill" style="width:${Math.min(100,Math.round(weeklyPages/20*100))}%"></div>
-    </div>
-    <div class="week-bar-labels">
-      <span>بناءً على ${s.plan.dailyAyah} آيات × ${7-s.plan.reviewDays} أيام</span>
-      <span>من ٢٠ صفحة/أسبوع</span>
-    </div>
-  </div>
-
-  ${s.weak ? `<div class="weak-box">⚠️ ملاحظة: تم تخفيف الخطة بناءً على المستوى الحالي — يُنصح بمتابعة مكثفة وتشجيع مستمر</div>` : ''}
 </div>
 
-<!-- Juz progress -->
-<div class="section">
-  <div class="section-title">🗺️ خريطة تقدم الحفظ — الأجزاء الثلاثون</div>
-  <div class="juz-section">
+<!-- خطة الحفظ -->
+<div class="sec">
+  <div class="sec-title">📝 ${isEn?'Memorization Plan':'خطة الحفظ'}</div>
+  <div class="grid2">
+    <div class="plan-card"><div class="pi">📖</div><div><div class="pn">${s.plan.dailyAyah}</div><div class="plab">${isEn?'New verses/day':'آيات جديدة يومياً'}</div><div class="pdesc">~${Math.round(s.plan.dailyAyah/15*10)/10} ${isEn?'pg/day':'صفحة/يوم'}</div></div></div>
+    <div class="plan-card"><div class="pi">🔁</div><div><div class="pn">${s.plan.reviewDays}</div><div class="plab">${isEn?'Review days/week':'أيام مراجعة/أسبوع'}</div><div class="pdesc">${7-s.plan.reviewDays} ${isEn?'new memorization days':'أيام حفظ جديد'}</div></div></div>
+    <div class="plan-card"><div class="pi">🎯</div><div><div class="plab">${isEn?'Weekly goal':'الهدف الأسبوعي'}</div><div style="font-size:1rem;font-weight:800;color:#b88a0a;margin:2px 0">${s.plan.weeklyGoal}</div><div class="pdesc">~${weeklyAyah} ${isEn?'verses':'آية'} · ${weeklyPages} ${isEn?'pages':'صفحة'}</div></div></div>
+    <div class="plan-card"><div class="pi">⏳</div><div><div class="plab">${isEn?'Est. completion':'الوقت المتوقع للختم'}</div><div style="font-size:1rem;font-weight:800;color:#c05e18;margin:2px 0">${timeLabel}</div><div class="pdesc">${daysLeft>0?daysLeft+(isEn?' days left':' يوم متبقٍّ'):(isEn?'Completed':'مكتمل')}</div></div></div>
+  </div>
+  <div style="background:#f0f8f4;border-radius:8px;padding:10px 14px;border:1px solid #c8e0d4;margin-top:8px">
+    <div style="display:flex;justify-content:space-between;font-size:.76rem;font-weight:700;margin-bottom:5px">
+      <span>${isEn?'Weekly progress estimate':'التقدم الأسبوعي المتوقع'}</span>
+      <span style="color:#1a9e65">${weeklyAyah} ${isEn?'verses':'آية'} · ${weeklyPages} ${isEn?'pg/wk':'صفحة/أسبوع'}</span>
+    </div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.round(weeklyPages/20*100))}%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:.63rem;color:#999">
+      <span>${isEn?'Based on':'بناءً على'} ${s.plan.dailyAyah} ${isEn?'verses ×':'آيات ×'} ${7-s.plan.reviewDays} ${isEn?'days':'أيام'}</span>
+      <span>${isEn?'of 20 pg/wk':'من ٢٠ صفحة/أسبوع'}</span>
+    </div>
+  </div>
+  ${s.weak?`<div class="warn">⚠️ ${isEn?'Note: Plan lightened based on current level — intensive follow-up recommended':'ملاحظة: تم تخفيف الخطة بناءً على المستوى — يُنصح بمتابعة مكثفة'}</div>`:''}
+</div>
+
+<!-- خريطة الأجزاء -->
+<div class="sec">
+  <div class="sec-title">🗺️ ${isEn?'30-Juz Progress Map':'خريطة تقدم الحفظ — الأجزاء الثلاثون'}</div>
+  <div style="background:#f8faf8;border-radius:10px;padding:12px;border:1px solid #dde8dd">
     <div style="display:flex;flex-wrap:wrap;gap:2px">${juzGrid}</div>
-    <div class="juz-legend">
-      <span><span class="juz-dot" style="background:#1a9e65"></span>مكتمل</span>
-      <span><span class="juz-dot" style="background:#b88a0a"></span>جزئي</span>
-      <span><span class="juz-dot" style="background:#ddd"></span>لم يبدأ</span>
+    <div style="display:flex;gap:14px;font-size:.7rem;color:#666;margin-top:8px">
+      <span>🟩 ${isEn?'Complete':'مكتمل'}</span>
+      <span>🟨 ${isEn?'Partial':'جزئي'}</span>
+      <span>⬜ ${isEn?'Not started':'لم يبدأ'}</span>
     </div>
   </div>
 </div>
 
-<!-- Sessions -->
+<!-- الجلسات -->
 ${(s.sessions||[]).length > 0 ? `
-<div class="section">
-  <div class="section-title">🗓️ سجل الجلسات (آخر ${Math.min(8,(s.sessions||[]).length)} جلسات)</div>
+<div class="sec">
+  <div class="sec-title">🗓️ ${isEn?'Session Log':'سجل الجلسات'} (${isEn?'last':'آخر'} ${Math.min(10,(s.sessions||[]).length)})</div>
   <table>
-    <thead>
-      <tr>
-        <th>التاريخ</th><th>جديد</th><th>مراجعة</th><th>السورة</th><th>التقييم</th><th>ملاحظات</th>
-      </tr>
-    </thead>
+    <thead><tr>
+      <th>${isEn?'Date':'التاريخ'}</th>
+      <th>${isEn?'New':'جديد'}</th>
+      <th>${isEn?'Review':'مراجعة'}</th>
+      <th>${isEn?'Surah':'السورة'}</th>
+      <th>${isEn?'Grade':'التقييم'}</th>
+      <th>${isEn?'Notes':'ملاحظات'}</th>
+    </tr></thead>
     <tbody>${sessionRows}</tbody>
+    <tfoot><tr>
+      <td colspan="2">${isEn?'Total new verses:':'إجمالي الآيات الجديدة:'}</td>
+      <td colspan="4" style="color:#1a9e65">${totalNew} ${isEn?'verses':'آية'} — ${(s.sessions||[]).length} ${isEn?'sessions':'جلسة'}</td>
+    </tr></tfoot>
   </table>
 </div>` : ''}
 
-<!-- Memorized surahs -->
+<!-- السور المحفوظة -->
 ${(s.memorized||[]).length > 0 ? `
-<div class="section">
-  <div class="section-title">📚 السور المحفوظة (${s.memorized.length} سورة)</div>
-  <div>${s.memorized.map(sur=>`<span class="surah-chip">${sur}</span>`).join('')}</div>
+<div class="sec">
+  <div class="sec-title">📚 ${isEn?'Memorized Surahs':'السور المحفوظة'} (${s.memorized.length})</div>
+  <div>${s.memorized.map(sur=>`<span class="chip">${sur}</span>`).join('')}</div>
 </div>` : ''}
 
-<!-- Footer -->
-<div style="margin-top:24px;padding-top:12px;border-top:1px solid #ddd;
-     display:flex;justify-content:space-between;font-size:.7rem;color:#aaa">
-  <span>مركز تحفيظ القرآن الكريم</span>
-  <span>تقرير الطالب: ${s.name} · ${today}</span>
+<!-- ملاحظات -->
+<div class="sec">
+  <div class="sec-title">💬 ${isEn?"Teacher's Notes":'ملاحظات المعلم'}</div>
+  <div class="note">
+    ${isEn
+      ? `${s.name} is ${s.level==='ضعيف'?'a student who needs extra support and encouragement':'a dedicated student showing continuous improvement'}. Daily home revision is recommended.`
+      : `الطالب ${s.name} ${s.level==='ضعيف'?'يحتاج إلى دعم إضافي وتشجيع مستمر':'يُبدي اجتهاداً وتحسناً مستمراً'}. يُنصح بالمراجعة اليومية في المنزل وتلاوة ما حُفظ في الصلوات.`}
+  </div>
 </div>
 
+<!-- Footer -->
+<div class="footer">
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="seal">☪️</div>
+    <div>
+      <div style="font-weight:700;color:#0a3320;font-size:.75rem">${instituteName}</div>
+      <div>${instituteCity}</div>
+    </div>
+  </div>
+  <div style="text-align:center">
+    <div>${isEn?'Student Report':'تقرير الطالب'}: ${s.name}</div>
+    <div>${today}</div>
+  </div>
+  <div style="text-align:left;font-size:.65rem">
+    <div>${isEn?'Generated by':'أُنشئ بواسطة'}</div>
+    <div style="color:#1a9e65;font-weight:700">نظام تحفيظ القرآن</div>
+  </div>
+</div>
+
+<script>
+  // طباعة تلقائية بعد تحميل الخطوط
+  window.onload = function() {
+    setTimeout(function() {
+      document.querySelector('.print-btn').style.display = 'flex';
+    }, 500);
+  };
+<\/script>
 </body>
 </html>`;
 
-  // Open in new window for print/save
-  const win = window.open('', '_blank', 'width=900,height=700');
+  const win = window.open('', '_blank', 'width=920,height=750,scrollbars=yes');
+  if (!win) { showToast('⚠️ '+(currentLang==='en'?'Allow pop-ups to export PDF':'اسمح بالنوافذ المنبثقة لتصدير PDF')); return; }
   win.document.write(html);
   win.document.close();
   win.focus();
+  showToast('📄 '+(currentLang==='en'?'Report opened — press Print to save as PDF':'تم فتح التقرير — اضغط طباعة لحفظه كـ PDF'));
+};
+
+// ==============================
+// 📈 ANALYTICS PAGE
+// ==============================
+pages['analytics'] = function(el) {
+  const isEn = currentLang === 'en';
+  const students = DB.students;
+  const totalPages = students.reduce((a,s)=>a+s.pages,0);
+  const avgAtt = students.length ? Math.round(students.reduce((a,s)=>a+s.attendance,0)/students.length) : 0;
+  const totalSessions = students.reduce((a,s)=>a+(s.sessions||[]).length,0);
+  const topStudents = [...students].sort((a,b)=>b.pages-a.pages).slice(0,5);
+  const weakStudents = students.filter(s=>s.weak);
+  const levelDist = {متفوق:0,جيد:0,متوسط:0,ضعيف:0};
+  students.forEach(s=>{ if(levelDist[s.level]!==undefined) levelDist[s.level]++; });
+  const circleStats = DB.circles.map(c=>{
+    const sts = students.filter(s=>s.circle===c.name);
+    const avgPct = sts.length ? Math.round(sts.reduce((a,s)=>a+(s.pages/s.totalPages*100),0)/sts.length) : 0;
+    const avgAt  = sts.length ? Math.round(sts.reduce((a,s)=>a+s.attendance,0)/sts.length) : 0;
+    return {...c, count:sts.length, avgPct, avgAt};
+  });
+
+  // Monthly sessions data (last 6 months)
+  const now = new Date();
+  const monthlyData = Array(6).fill(0).map((_,i)=>{
+    const d = new Date(now); d.setMonth(d.getMonth()-5+i);
+    const m = d.toISOString().slice(0,7);
+    const count = students.flatMap(s=>s.sessions||[]).filter(ses=>ses.date&&ses.date.startsWith(m)).length;
+    return { label: d.toLocaleDateString(isEn?'en-US':'ar-SA',{month:'short'}), count };
+  });
+  const maxM = Math.max(...monthlyData.map(m=>m.count),1);
+
+  el.innerHTML = `
+    <!-- KPI Row -->
+    <div class="grid-4" style="margin-bottom:20px">
+      ${[
+        ['📊', isEn?'Total Pages':'إجمالي الصفحات', totalPages, 'green', isEn?'memorized':'محفوظة'],
+        ['✅', isEn?'Avg Attendance':'متوسط الحضور', avgAtt+'%', avgAtt>=85?'green':avgAtt>=70?'gold':'red', ''],
+        ['🗓️', isEn?'Total Sessions':'إجمالي الجلسات', totalSessions, 'blue', ''],
+        ['⚠️', isEn?'Need Support':'يحتاجون دعماً', weakStudents.length, weakStudents.length>0?'red':'green', isEn?'students':'طلاب'],
+      ].map(([icon,lbl,val,c,sub])=>`
+        <div class="stat-box">
+          <div class="stat-icon ${c}">${icon}</div>
+          <div><div class="stat-val">${val}</div><div class="stat-lbl">${lbl}</div>${sub?`<div class="stat-change">${sub}</div>`:''}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <!-- Monthly sessions chart -->
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">📅</span> ${isEn?'Monthly Sessions (6 months)':'الجلسات الشهرية (٦ أشهر)'}</div>
+        <div class="chart-bars" id="monthlyChart" style="height:120px"></div>
+        <div class="chart-labels">
+          ${monthlyData.map(m=>`<div class="chart-label">${m.label}</div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Level distribution -->
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">🎯</span> ${isEn?'Level Distribution':'توزيع المستويات'}</div>
+        ${students.length===0?`<div style="text-align:center;padding:40px;color:var(--text-muted)">${t('noStudents')}</div>`:`
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+          ${[['متفوق','green',isEn?'Advanced':'متفوق'],['جيد','blue',isEn?'Good':'جيد'],['متوسط','gold',isEn?'Average':'متوسط'],['ضعيف','red',isEn?'Weak':'ضعيف']].map(([key,c,lbl])=>{
+            const cnt = levelDist[key]||0;
+            const pct = students.length ? Math.round(cnt/students.length*100) : 0;
+            return `<div>
+              <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px">
+                <span style="font-weight:600">${lbl}</span>
+                <span style="color:var(--text-muted)">${cnt} ${isEn?'students':'طالب'} · ${pct}%</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill ${c==='red'?'red':''}" style="width:${pct}%;background:var(--${c==='green'?'emerald':c==='blue'?'blue':c==='gold'?'gold-light':'red'})"></div></div>
+            </div>`;
+          }).join('')}
+        </div>`}
+      </div>
+    </div>
+
+    <!-- Circles comparison -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ct-icon">🕌</span> ${isEn?'Circles Comparison':'مقارنة الحلقات'}</div>
+      ${circleStats.length===0?`<div style="text-align:center;padding:30px;color:var(--text-muted)">${t('noCircles')}</div>`:`
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th>${isEn?'Circle':'الحلقة'}</th>
+          <th>${isEn?'Students':'الطلاب'}</th>
+          <th>${isEn?'Avg Progress':'متوسط التقدم'}</th>
+          <th>${isEn?'Avg Attendance':'متوسط الحضور'}</th>
+          <th>${isEn?'Status':'الحالة'}</th>
+        </tr></thead>
+        <tbody>
+          ${circleStats.map(c=>`<tr>
+            <td style="font-weight:700">${c.name}</td>
+            <td>${c.count}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="progress-bar" style="flex:1;min-width:80px"><div class="progress-fill" style="width:${c.avgPct}%"></div></div>
+                <span style="font-size:.8rem;color:var(--emerald-light);font-weight:700">${c.avgPct}%</span>
+              </div>
+            </td>
+            <td><span style="color:${c.avgAt>=85?'var(--emerald-light)':c.avgAt>=70?'var(--gold-light)':'var(--red)'};font-weight:700">${c.avgAt}%</span></td>
+            <td><span class="badge ${c.avgPct>=50?'green':c.avgPct>=25?'gold':'red'}">${c.avgPct>=50?(isEn?'Good':'ممتاز'):c.avgPct>=25?(isEn?'Average':'متوسط'):(isEn?'Needs Attention':'يحتاج متابعة')}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`}
+    </div>
+
+    <!-- Top students -->
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">🥇</span> ${isEn?'Top Students':'أفضل الطلاب تقدماً'}</div>
+      ${topStudents.length===0?`<div style="text-align:center;padding:30px;color:var(--text-muted)">${t('noStudents')}</div>`:`
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${topStudents.map((s,i)=>{
+          const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
+          const pct=Math.round(s.pages/s.totalPages*100);
+          return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:10px">
+            <div style="font-size:1.4rem;flex-shrink:0">${medals[i]}</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:.9rem">${s.name}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">${s.circle} · ${s.pages} ${isEn?'pages':'صفحة'}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              ${levelBadge(s.level)}
+              <span style="font-size:.78rem;font-weight:800;color:var(--emerald-light)">${pct}%</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`}
+    </div>
+  `;
+
+  // Monthly chart
+  const mc = document.getElementById('monthlyChart');
+  if (mc) {
+    monthlyData.forEach((m,i)=>{
+      const b=document.createElement('div'); b.className='chart-bar';
+      b.setAttribute('data-val', m.count+(isEn?' sessions':' جلسة'));
+      setTimeout(()=>{ b.style.height=(m.count/maxM*100)+'%'; },100+i*80);
+      mc.appendChild(b);
+    });
+  }
+};
+
+// ==============================
+// 🏆 REWARDS PAGE
+// ==============================
+const BADGES = [
+  {id:'first_page',  icon:'📄', label:'أول صفحة',       labelEn:'First Page',       cond:s=>s.pages>=1,       color:'#4a9fd4'},
+  {id:'ten_pages',   icon:'📚', label:'عشر صفحات',       labelEn:'10 Pages',         cond:s=>s.pages>=10,      color:'#22a86f'},
+  {id:'juz_complete',icon:'⭐', label:'جزء كامل',        labelEn:'Full Juz',         cond:s=>(s.juzProgress||[]).some(v=>v>=20), color:'#d4a017'},
+  {id:'five_juz',    icon:'🌟', label:'خمسة أجزاء',      labelEn:'5 Juz',            cond:s=>(s.juzProgress||[]).filter(v=>v>=20).length>=5, color:'#e07830'},
+  {id:'half_quran',  icon:'🔆', label:'نصف القرآن',      labelEn:'Half Quran',       cond:s=>s.pages>=302,     color:'#9b6fd4'},
+  {id:'full_attend', icon:'✅', label:'حضور مثالي',      labelEn:'Perfect Attendance',cond:s=>s.attendance>=95,color:'#22a86f'},
+  {id:'ten_sessions',icon:'🗓️', label:'١٠ جلسات',        labelEn:'10 Sessions',      cond:s=>(s.sessions||[]).length>=10, color:'#4a9fd4'},
+  {id:'khatm',       icon:'🕌', label:'ختم القرآن',      labelEn:'Full Quran',       cond:s=>s.pages>=604,     color:'#d4a017'},
+];
+
+function getStudentPoints(s) {
+  let pts = 0;
+  pts += s.pages * 2;
+  pts += (s.sessions||[]).length * 5;
+  pts += Math.round(s.attendance / 10);
+  const rew = DB.rewards[s.id] || {};
+  pts += (rew.bonus || 0);
+  return pts;
+}
+
+function getStudentBadges(s) {
+  return BADGES.filter(b => b.cond(s));
+}
+
+pages['rewards'] = function(el) {
+  const isEn = currentLang === 'en';
+  const students = [...DB.students].map(s=>({
+    ...s,
+    points: getStudentPoints(s),
+    badges: getStudentBadges(s),
+  })).sort((a,b)=>b.points-a.points);
+
+  el.innerHTML = `
+    <!-- Header stats -->
+    <div class="grid-4" style="margin-bottom:20px">
+      ${[
+        ['🏆', isEn?'Total Points':'إجمالي النقاط', students.reduce((a,s)=>a+s.points,0), 'gold'],
+        ['🎖️', isEn?'Total Badges':'إجمالي الشارات', students.reduce((a,s)=>a+s.badges.length,0), 'green'],
+        ['🥇', isEn?'Top Student':'الطالب الأول', students[0]?.name||'—', 'blue'],
+        ['⭐', isEn?'Avg Points':'متوسط النقاط', students.length?Math.round(students.reduce((a,s)=>a+s.points,0)/students.length):0, 'green'],
+      ].map(([icon,lbl,val,c])=>`
+        <div class="stat-box">
+          <div class="stat-icon ${c}">${icon}</div>
+          <div><div class="stat-val" style="font-size:1rem">${val}</div><div class="stat-lbl">${lbl}</div></div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Badge legend -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title"><span class="ct-icon">🎖️</span> ${isEn?'Achievement Badges':'شارات الإنجاز'}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${BADGES.map(b=>`
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;
+               background:var(--surface2);border-radius:20px;border:1px solid var(--border)">
+            <span style="font-size:1.1rem">${b.icon}</span>
+            <span style="font-size:.75rem;font-weight:600">${isEn?b.labelEn:b.label}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title"><span class="ct-icon">🏅</span> ${isEn?'Leaderboard':'لوحة المتصدرين'}</div>
+      ${students.length===0
+        ? `<div style="text-align:center;padding:40px;color:var(--text-muted)">${t('noStudents')}</div>`
+        : students.map((s,i)=>{
+          const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+          const maxPts = students[0].points || 1;
+          const barW = Math.round((s.points/maxPts)*100);
+          return `
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0;
+               border-bottom:1px solid var(--border)">
+            <div style="min-width:32px;text-align:center;font-size:${i<3?'1.4rem':'.9rem'};
+                 font-weight:${i<3?'900':'600'};color:var(--text-muted)">${medal||'#'+(i+1)}</div>
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--emerald-glow);
+                 color:var(--emerald-light);display:flex;align-items:center;justify-content:center;
+                 font-weight:800;flex-shrink:0;font-size:.95rem">${s.name.charAt(0)}</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span style="font-weight:700;font-size:.9rem">${s.name}</span>
+                <span style="font-size:.85rem;font-weight:900;color:var(--gold-light)">⭐ ${s.points} ${isEn?'pts':'نقطة'}</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${barW}%;background:var(--gold-light)"></div></div>
+              <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+                ${s.badges.map(b=>`<span title="${isEn?b.labelEn:b.label}" style="font-size:1rem">${b.icon}</span>`).join('')}
+                ${s.badges.length===0?`<span style="font-size:.7rem;color:var(--text-dim)">${isEn?'No badges yet':'لا شارات بعد'}</span>`:''}
+              </div>
+            </div>
+            <button class="btn btn-gold btn-sm" onclick="openRewardModal(${s.id})"
+              style="flex-shrink:0">🎁 ${isEn?'Reward':'مكافأة'}</button>
+          </div>`;
+        }).join('')}
+    </div>
+  `;
+};
+
+window.openRewardModal = function(id) {
+  const s = DB.students.find(st=>st.id===id);
+  if (!s) return;
+  const isEn = currentLang==='en';
+  const pts = getStudentPoints(s);
+  const badges = getStudentBadges(s);
+  openModal('🎁 '+(isEn?'Add Reward: ':'إضافة مكافأة: ')+s.name, `
+    <div style="text-align:center;padding:16px 0;margin-bottom:16px">
+      <div style="font-size:2.5rem;margin-bottom:8px">🏆</div>
+      <div style="font-size:1.5rem;font-weight:900;color:var(--gold-light)">⭐ ${pts} ${isEn?'points':'نقطة'}</div>
+      <div style="font-size:.8rem;color:var(--text-muted);margin-top:4px">${isEn?'Current points':'النقاط الحالية'}</div>
+      <div style="display:flex;justify-content:center;gap:6px;margin-top:10px;flex-wrap:wrap">
+        ${badges.map(b=>`<span style="font-size:1.5rem" title="${isEn?b.labelEn:b.label}">${b.icon}</span>`).join('')}
+        ${badges.length===0?`<span style="color:var(--text-muted);font-size:.82rem">${isEn?'No badges yet':'لا شارات بعد'}</span>`:''}
+      </div>
+    </div>
+    <div class="field">
+      <label>${isEn?'Add bonus points':'إضافة نقاط مكافأة'}</label>
+      <div style="display:flex;gap:8px">
+        ${[5,10,20,50].map(n=>`
+          <button class="btn btn-gold btn-sm" onclick="addBonusPoints(${id},${n})">+${n}</button>
+        `).join('')}
+      </div>
+    </div>
+    <div class="field">
+      <label>${isEn?'Custom amount':'مبلغ مخصص'}</label>
+      <div style="display:flex;gap:8px">
+        <input type="number" id="customPts" placeholder="${isEn?'Points':'نقاط'}" min="1" style="flex:1">
+        <button class="btn btn-solid" onclick="addBonusPoints(${id},parseInt(document.getElementById('customPts').value)||0)">✅ ${isEn?'Add':'إضافة'}</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>${isEn?'Special message to student':'رسالة تحفيزية للطالب'}</label>
+      <input id="rewardMsg" placeholder="${isEn?'Great work! Keep it up...':'أحسنت يا بطل، واصل التقدم...'}">
+    </div>
+    <button class="btn btn-solid" style="width:100%" onclick="sendRewardNotif(${id})">
+      📢 ${isEn?'Send to Parent':'إرسال إشعار لولي الأمر'}
+    </button>
+  `);
+};
+
+window.togglePushNotifications = function(btn) {
+  var isEn = currentLang === 'en';
+  if (PUSH.enabled) {
+    PUSH.enabled = false;
+    localStorage.setItem('pushEnabled', '0');
+    showToast('🔕 '+(isEn?'Notifications disabled':'تم تعطيل الإشعارات'));
+    navigateTo('settings');
+  } else {
+    PUSH.request().then(function(result) {
+      if (result === 'granted') {
+        showToast('🔔 '+(isEn?'Notifications enabled!':'تم تفعيل الإشعارات!'));
+        // Test notification
+        setTimeout(function() {
+          PUSH.send(
+            isEn?'Notifications Active':'الإشعارات مفعّلة',
+            isEn?'You will now receive instant alerts':'ستتلقى تنبيهات فورية الآن',
+            { emoji:'🔔', type:'info' }
+          );
+        }, 500);
+      } else {
+        showToast('⚠️ '+(isEn?'Permission denied — please allow from browser settings':'تم رفض الإذن — اسمح من إعدادات المتصفح'));
+      }
+      navigateTo('settings');
+    });
+  }
+};
+
+window.addBonusPoints = function(id, pts) {
+  if (!pts || pts<=0) return;
+  if (!DB.rewards[id]) DB.rewards[id] = {bonus:0};
+  DB.rewards[id].bonus = (DB.rewards[id].bonus||0) + pts;
+  const s = DB.students.find(st=>st.id===id);
+  saveDB();
+  closeModalDirect();
+
+  // 🔔 إشعار Push
+  PUSH.send(
+    '🏆 ' + (currentLang==='en'?'Reward Added':'مكافأة جديدة') + (s?' — '+s.name:''),
+    (currentLang==='en'?'+'+pts+' points added!':'تمت إضافة '+pts+' نقطة!'),
+    { emoji:'🏆', type:'achievement', tag:'reward-'+id }
+  );
+
+  navigateTo('rewards');
+};
+
+window.sendRewardNotif = function(id) {
+  const s = DB.students.find(st=>st.id===id);
+  const msg = document.getElementById('rewardMsg')?.value || '';
+  const notif = {
+    id: Date.now(), type:'achievement',
+    msg: '🏆 مكافأة للطالب '+s.name+(msg?' — '+msg:''),
+    time: new Date().toLocaleDateString('ar-SA')
+  };
+  DB.notifications.unshift(notif);
+  saveDB();
+  closeModalDirect();
+  showToast('📢 '+(currentLang==='en'?'Notification sent!':'تم إرسال الإشعار!'));
+};
+
+// ==============================
+// 📅 CALENDAR PAGE
+// ==============================
+pages['calendar'] = function(el) {
+  const isEn = currentLang === 'en';
+  const now  = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const monthName = now.toLocaleDateString(isEn?'en-US':'ar-SA',{month:'long',year:'numeric'});
+
+  const EVENT_TYPES = {
+    session:   {label:isEn?'Session':'حلقة',     color:'#22a86f', bg:'rgba(34,168,111,.15)'},
+    holiday:   {label:isEn?'Holiday':'إجازة',    color:'#e05555', bg:'rgba(224,85,85,.12)'},
+    exam:      {label:isEn?'Exam':'اختبار',       color:'#9b6fd4', bg:'rgba(155,111,212,.15)'},
+    event:     {label:isEn?'Event':'فعالية',      color:'#e07830', bg:'rgba(192,94,24,.12)'},
+  };
+
+  // Build calendar days
+  const calDays = [];
+  for(let i=0;i<firstDay;i++) calDays.push(null);
+  for(let d=1;d<=daysInMonth;d++) calDays.push(d);
+
+  const todayDate = now.getDate();
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div style="font-size:1.1rem;font-weight:800">${monthName}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${Object.entries(EVENT_TYPES).map(([k,v])=>`
+          <span style="display:flex;align-items:center;gap:4px;font-size:.76rem;font-weight:600;color:${v.color}">
+            <span style="width:10px;height:10px;border-radius:50%;background:${v.color};display:inline-block"></span>
+            ${v.label}
+          </span>`).join('')}
+        <button class="btn btn-solid btn-sm" onclick="openAddEventModal()">+ ${isEn?'Add Event':'إضافة حدث'}</button>
+      </div>
+    </div>
+
+    <!-- Calendar grid -->
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">
+        ${(isEn?['Sun','Mon','Tue','Wed','Thu','Fri','Sat']:['أحد','اثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'])
+          .map(d=>`<div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--text-muted);padding:4px">${d}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">
+        ${calDays.map(d=>{
+          if (!d) return `<div></div>`;
+          const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const dayEvents = DB.calendar.filter(e=>e.date===dateStr);
+          const isToday = d===todayDate;
+          return `
+          <div onclick="openDayEvents('${dateStr}',${d})"
+               style="min-height:60px;padding:4px;border-radius:8px;cursor:pointer;
+                      background:${isToday?'var(--emerald-glow)':'var(--surface)'};
+                      border:${isToday?'2px solid var(--emerald-mid)':'1px solid var(--border)'};
+                      transition:all .2s"
+               onmouseenter="this.style.background='var(--surface2)'"
+               onmouseleave="this.style.background='${isToday?'var(--emerald-glow)':'var(--surface)'}'">
+            <div style="font-size:.78rem;font-weight:${isToday?'900':'600'};
+                 color:${isToday?'var(--emerald-light)':'var(--text)'};margin-bottom:3px">${d}</div>
+            ${dayEvents.slice(0,2).map(e=>`
+              <div style="background:${EVENT_TYPES[e.type]?.bg||'var(--surface2)'};
+                   color:${EVENT_TYPES[e.type]?.color||'var(--text)'};
+                   border-radius:4px;padding:2px 4px;font-size:.6rem;font-weight:700;
+                   margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${e.title}
+              </div>`).join('')}
+            ${dayEvents.length>2?`<div style="font-size:.6rem;color:var(--text-muted)">+${dayEvents.length-2}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Upcoming events -->
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">📋</span> ${isEn?'All Events This Month':'أحداث الشهر'}</div>
+      ${DB.calendar.filter(e=>e.date.startsWith(`${year}-${String(month+1).padStart(2,'0')}`))
+                   .sort((a,b)=>a.date.localeCompare(b.date))
+                   .length===0
+        ? `<div style="text-align:center;padding:30px;color:var(--text-muted)">
+             <div style="font-size:2rem;margin-bottom:8px">📅</div>
+             <div>${isEn?'No events this month':'لا توجد أحداث هذا الشهر'}</div>
+           </div>`
+        : DB.calendar.filter(e=>e.date.startsWith(`${year}-${String(month+1).padStart(2,'0')}`))
+                     .sort((a,b)=>a.date.localeCompare(b.date))
+                     .map(ev=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="width:44px;height:44px;border-radius:10px;background:${EVENT_TYPES[ev.type]?.bg||'var(--surface2)'};
+                 display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="font-size:1.2rem">${ev.type==='session'?'🕌':ev.type==='holiday'?'🏖️':ev.type==='exam'?'📝':'🎉'}</span>
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:.9rem">${ev.title}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">${ev.date} ${ev.note?'· '+ev.note:''}</div>
+            </div>
+            <span class="badge ${ev.type==='session'?'green':ev.type==='holiday'?'red':ev.type==='exam'?'':'gold'}"
+                  style="font-size:.7rem">${EVENT_TYPES[ev.type]?.label||ev.type}</span>
+            <button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(204,53,53,.2)"
+              onclick="deleteCalEvent(${ev.id})">🗑</button>
+          </div>`).join('')}
+    </div>
+  `;
+};
+
+window.openAddEventModal = function() {
+  const isEn = currentLang==='en';
+  const types = isEn
+    ? [['session','🕌 Session'],['holiday','🏖️ Holiday'],['exam','📝 Exam'],['event','🎉 Event']]
+    : [['session','🕌 حلقة'],['holiday','🏖️ إجازة'],['exam','📝 اختبار'],['event','🎉 فعالية']];
+  openModal('📅 '+(isEn?'Add Event':'إضافة حدث'), `
+    <div class="field"><label>${isEn?'Title *':'العنوان *'}</label>
+      <input id="evTitle" placeholder="${isEn?'Event title':'عنوان الحدث'}">
+    </div>
+    <div class="grid-2" style="gap:10px">
+      <div class="field" style="margin:0"><label>${isEn?'Date *':'التاريخ *'}</label>
+        <input type="date" id="evDate" value="${new Date().toISOString().split('T')[0]}">
+      </div>
+      <div class="field" style="margin:0"><label>${isEn?'Type':'النوع'}</label>
+        <select id="evType">
+          ${types.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>${isEn?'Circle (optional)':'الحلقة (اختياري)'}</label>
+      <select id="evCircle">
+        <option value="">${isEn?'— All circles —':'— كل الحلقات —'}</option>
+        ${DB.circles.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>${isEn?'Note':'ملاحظة'}</label>
+      <input id="evNote" placeholder="${isEn?'Additional details...':'تفاصيل إضافية...'}">
+    </div>
+    <button class="btn btn-solid" style="width:100%" onclick="saveCalEvent()">
+      ✅ ${isEn?'Save Event':'حفظ الحدث'}
+    </button>
+  `);
+};
+
+window.saveCalEvent = function() {
+  const isEn = currentLang==='en';
+  const title = document.getElementById('evTitle')?.value?.trim();
+  const date  = document.getElementById('evDate')?.value;
+  if (!title) { showToast('⚠️ '+(isEn?'Enter event title':'أدخل عنوان الحدث')); return; }
+  if (!date)  { showToast('⚠️ '+(isEn?'Select a date':'اختر التاريخ')); return; }
+  DB.calendar.push({
+    id: Date.now(),
+    title,
+    date,
+    type:     document.getElementById('evType')?.value || 'session',
+    circleId: document.getElementById('evCircle')?.value || '',
+    note:     document.getElementById('evNote')?.value?.trim() || '',
+  });
+  saveDB();
+  closeModalDirect();
+  showToast('✅ '+(isEn?'Event added':'تم إضافة الحدث'));
+  navigateTo('calendar');
+};
+
+window.deleteCalEvent = function(id) {
+  DB.calendar = DB.calendar.filter(e=>e.id!==id);
+  saveDB();
+  navigateTo('calendar');
+};
+
+window.openDayEvents = function(dateStr, d) {
+  const isEn = currentLang==='en';
+  const dayEvents = DB.calendar.filter(e=>e.date===dateStr);
+  if (dayEvents.length===0) {
+    openAddEventModal();
+    setTimeout(()=>{ const di=document.getElementById('evDate'); if(di) di.value=dateStr; },100);
+    return;
+  }
+  openModal('📅 '+dateStr, `
+    <div style="margin-bottom:12px">
+      ${dayEvents.map(ev=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:10px;margin-bottom:8px">
+          <span style="font-size:1.3rem">${ev.type==='session'?'🕌':ev.type==='holiday'?'🏖️':ev.type==='exam'?'📝':'🎉'}</span>
+          <div style="flex:1"><div style="font-weight:700">${ev.title}</div>${ev.note?`<div style="font-size:.76rem;color:var(--text-muted)">${ev.note}</div>`:''}</div>
+          <button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border:none" onclick="deleteCalEvent(${ev.id});closeModalDirect();navigateTo('calendar')">🗑</button>
+        </div>`).join('')}
+    </div>
+    <button class="btn btn-solid" style="width:100%" onclick="closeModalDirect();openAddEventModal();setTimeout(()=>{const di=document.getElementById('evDate');if(di)di.value='${dateStr}'},100)">
+      + ${isEn?'Add Event':'إضافة حدث'}
+    </button>
+  `);
 };
 
 // ==============================
@@ -7258,26 +8630,25 @@ window.addStudent = function() {
   DB.students.push(newS);
   if (circleObj) circleObj.students.push(newId);
 
-  // إنشاء حساب ولي الأمر مرتبط بالطالب
+  // إنشاء حساب ولي الأمر مرتبط بالطالب مع تشفير كلمة المرور
   const parentColors = ['#d4a017','#9b6fd4','#4a9fd4','#e07830','#e05555'];
   const parentId = DB.users.length > 0 ? Math.max(...DB.users.map(u=>u.id))+1 : 1;
-  DB.users.push({
-    id: parentId,
-    role: 'parent',
-    name: parentName,
-    email: parentEmail,
-    pass: parentPass,
-    color: parentColors[parentId % parentColors.length],
-    studentId: newId,
-    joinDate: new Date().toISOString().split('T')[0],
-    status: 'active'
-  });
 
-  window._newStudentPhoto = null;
-  saveDB();
-  closeModalDirect();
-  showToast('✅ '+(isEn?`Student added & parent account created`:`تم إضافة ${name} وفتح حساب ولي الأمر`));
-  navigateTo(currentUser.role==='teacher'?'t-students':'students');
+  hashPassword(parentPass).then(function(hashedParentPass) {
+    DB.users.push({
+      id: parentId, role: 'parent', name: parentName,
+      email: parentEmail, pass: hashedParentPass,
+      color: parentColors[parentId % parentColors.length],
+      studentId: newId,
+      joinDate: new Date().toISOString().split('T')[0],
+      status: 'active'
+    });
+    window._newStudentPhoto = null;
+    saveDB();
+    closeModalDirect();
+    showToast('✅ '+(isEn?'Student added & parent account created':'تم إضافة '+name+' وفتح حساب ولي الأمر'));
+    navigateTo(currentUser.role==='teacher'?'t-students':'students');
+  });
 };
 
 
@@ -7720,11 +9091,11 @@ function buildBottomNav() {
 
   const navItems = {
     admin: [
-      {icon:'🏠', label: currentLang==='en'?'Home':'الرئيسية',    page:'dashboard'},
-      {icon:'👥', label: currentLang==='en'?'Students':'الطلاب',   page:'students'},
-      {icon:'🕌', label: currentLang==='en'?'Circles':'الحلقات',   page:'circles'},
-      {icon:'📋', label: currentLang==='en'?'Reports':'التقارير',  page:'reports'},
-      {icon:'⚙️', label: currentLang==='en'?'Settings':'الإعدادات', page:'settings'},
+      {icon:'🏠', label: currentLang==='en'?'Home':'الرئيسية',      page:'dashboard'},
+      {icon:'👥', label: currentLang==='en'?'Students':'الطلاب',    page:'students'},
+      {icon:'📈', label: currentLang==='en'?'Analytics':'إحصائيات', page:'analytics'},
+      {icon:'🏆', label: currentLang==='en'?'Rewards':'مكافآت',     page:'rewards'},
+      {icon:'📅', label: currentLang==='en'?'Calendar':'التقويم',   page:'calendar'},
     ],
     teacher: [
       {icon:'🏠', label: currentLang==='en'?'Home':'الرئيسية',    page:'t-dashboard'},
@@ -7734,10 +9105,11 @@ function buildBottomNav() {
       {icon:'📋', label: currentLang==='en'?'Reports':'التقارير',  page:'t-reports'},
     ],
     parent: [
-      {icon:'🏠', label: currentLang==='en'?'Home':'الرئيسية',     page:'p-dashboard'},
-      {icon:'📖', label: currentLang==='en'?'Progress':'الحفظ',    page:'p-progress'},
-      {icon:'📋', label: currentLang==='en'?'Reports':'التقارير',  page:'p-reports'},
-      {icon:'🔔', label: currentLang==='en'?'Alerts':'الإشعارات',  page:'p-notifications'},
+      {icon:'🏠', label: currentLang==='en'?'Home':'الرئيسية',      page:'p-dashboard'},
+      {icon:'🗺️', label: currentLang==='en'?'Map':'خريطة الحفظ',   page:'p-map'},
+      {icon:'📝', label: currentLang==='en'?'Exam':'الاختبار',      page:'p-exam'},
+      {icon:'📈', label: currentLang==='en'?'Progress':'التقدم',    page:'p-progress'},
+      {icon:'🔔', label: currentLang==='en'?'Alerts':'الإشعارات',   page:'p-notifications'},
     ],
   };
 
@@ -7761,9 +9133,10 @@ function updateBottomNav() {
 
 // ---- Date init ----
 document.getElementById('pageDate').textContent = new Date().toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-// ---- مسح الحسابات القديمة نهائياً ----
-localStorage.removeItem('hifz_db_v1');
+// ---- تحميل البيانات ----
 loadDB();
+// تشفير كلمات المرور القديمة تلقائياً
+migratePasswords();
 loadSavedTheme();
 loadSavedLang();
 
