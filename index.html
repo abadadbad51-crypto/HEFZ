@@ -998,11 +998,11 @@ tbody tr:last-child td{border-bottom:none;}
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);
   z-index: 999;
+  cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-  z-index: 99;
-  backdrop-filter: blur(2px);
-}
+.sidebar-overlay.show { display: block; }
 .sidebar-overlay.show { display: block; }
 
 /* ── TABLET (769px – 1024px) ── */
@@ -1604,7 +1604,7 @@ tbody tr:last-child td{border-bottom:none;}
 </div>
 
 <!-- Sidebar overlay (mobile backdrop) -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()" ontouchend="event.preventDefault();closeSidebar()"></div>
 
 <!-- Notifications Panel -->
 <div class="notif-panel" id="notifPanel">
@@ -9081,8 +9081,13 @@ window.toggleSidebar = function() {
   if (!sb) return;
   const isOpen = sb.classList.toggle('open');
   if (ov) {
-    ov.style.display = isOpen ? 'block' : 'none';
-    ov.classList.toggle('show', isOpen);
+    if (isOpen) {
+      ov.style.display = 'block';
+      setTimeout(function() { ov.classList.add('show'); }, 10);
+    } else {
+      ov.classList.remove('show');
+      setTimeout(function() { ov.style.display = 'none'; }, 300);
+    }
   }
   document.body.style.overflow = isOpen ? 'hidden' : '';
 };
@@ -9091,7 +9096,10 @@ window.closeSidebar = function() {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebarOverlay');
   if (sb) sb.classList.remove('open');
-  if (ov) { ov.classList.remove('show'); ov.style.display = 'none'; }
+  if (ov) {
+    ov.classList.remove('show');
+    setTimeout(function() { ov.style.display = 'none'; }, 300);
+  }
   document.body.style.overflow = '';
 };
 
