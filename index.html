@@ -451,15 +451,17 @@ tbody tr:last-child td{border-bottom:none;}
 /* Notifications panel */
 .notif-panel{
   position:fixed;top:0;left:0;bottom:0;
-  width:340px;
+  width:320px;
+  max-width:90vw;
   background:var(--surface);
   border-right:1px solid var(--border);
-  z-index:200;
-  transform:translateX(-340px);
-  transition:transform .3s;
+  z-index:500;
+  transform:translateX(-110%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;
+  visibility:hidden;
 }
-.notif-panel.open{transform:translateX(0);}
+.notif-panel.open{transform:translateX(0);visibility:visible;}
 .notif-panel-hdr{
   padding:20px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
@@ -1018,13 +1020,19 @@ tbody tr:last-child td{border-bottom:none;}
 
   /* Sidebar: hidden off-screen by default */
   .sidebar {
-    transform: translateX(105%);
+    right: auto;
+    left: 0;
+    transform: translateX(-110%);
     width: 280px;
-    box-shadow: -6px 0 24px rgba(0,0,0,.35);
+    box-shadow: 6px 0 24px rgba(0,0,0,.35);
     z-index: 1000;
     transition: transform .3s cubic-bezier(.4,0,.2,1);
+    visibility: hidden;
   }
-  .sidebar.open { transform: translateX(0); }
+  .sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+  }
 
   /* Main content fills full width */
   .main {
@@ -2681,27 +2689,32 @@ function navigateTo(pageId) {
   if (navEl) navEl.classList.add('active');
 
   const titles = {
-    'dashboard': currentLang==='en' ? 'Admin Dashboard' : 'لوحة التحكم — المدير',
-    'students':  t('students'),
-    'teachers':  t('teachers'),
-    'circles':   t('circles'),
-    'attendance':t('attendance'),
-    'reports':   t('reports'),
-    'notifications':t('notifications'),
-    'settings':  t('settings'),
-    't-dashboard':t('t-dashboard'),
-    't-students': t('t-students'),
-    't-session':  currentLang==='en'?'Record Session':'تسجيل الجلسة',
-    't-attendance':t('t-attendance'),
-    't-plans':    currentLang==='en'?'Study Plans':'خطط الحفظ',
-    't-reports':  t('t-reports'),
-    't-notifications':t('t-notifications'),
-    'p-dashboard':t('p-dashboard'),
-    'p-progress': t('p-progress'),
-    'p-reports':  t('p-reports'),
-    'p-notifications':t('p-notifications'),
+    'dashboard':       currentLang==='en' ? 'Admin Dashboard'      : 'لوحة التحكم',
+    'analytics':       currentLang==='en' ? 'Advanced Analytics'   : 'الإحصائيات المتقدمة',
+    'students':        currentLang==='en' ? 'Students'             : 'إدارة الطلاب',
+    'teachers':        currentLang==='en' ? 'Teachers'             : 'إدارة المعلمين',
+    'circles':         currentLang==='en' ? 'Quran Halaqas'        : 'الحلقات القرآنية',
+    'attendance':      currentLang==='en' ? 'Attendance'           : 'الحضور والغياب',
+    'calendar':        currentLang==='en' ? 'Calendar'             : 'التقويم',
+    'rewards':         currentLang==='en' ? 'Rewards'              : 'نقاط المكافآت',
+    'reports':         currentLang==='en' ? 'Reports'              : 'التقارير',
+    'notifications':   currentLang==='en' ? 'Notifications'        : 'الإشعارات',
+    'settings':        currentLang==='en' ? 'Settings'             : 'الإعدادات',
+    't-dashboard':     currentLang==='en' ? 'Teacher Dashboard'    : 'لوحة المعلم',
+    't-students':      currentLang==='en' ? 'My Students'          : 'طلابي',
+    't-session':       currentLang==='en' ? 'Record Session'       : 'تسجيل الجلسة',
+    't-attendance':    currentLang==='en' ? 'Attendance'           : 'الحضور',
+    't-plans':         currentLang==='en' ? 'Study Plans'          : 'خطط الحفظ',
+    't-reports':       currentLang==='en' ? 'Student Reports'      : 'تقارير الطلاب',
+    't-notifications': currentLang==='en' ? 'Notifications'        : 'الإشعارات',
+    'p-dashboard':     currentLang==='en' ? 'Home'                 : 'الصفحة الرئيسية',
+    'p-map':           currentLang==='en' ? 'Memorization Map'     : 'خريطة الحفظ',
+    'p-exam':          currentLang==='en' ? 'Memorization Exam'    : 'اختبار الحفظ',
+    'p-progress':      currentLang==='en' ? 'Progress'             : 'تقدم الحفظ',
+    'p-reports':       currentLang==='en' ? 'Reports'              : 'التقارير الدورية',
+    'p-notifications': currentLang==='en' ? 'Notifications'        : 'الإشعارات',
   };
-  document.getElementById('pageTitle').textContent = titles[pageId]||pageId;
+  document.getElementById('pageTitle').textContent = titles[pageId] || pageId;
 
   const container = document.getElementById('pagesContainer');
   container.innerHTML = '';
@@ -2735,7 +2748,11 @@ function buildNotifPanel() {
 
 function toggleNotifPanel() {
   notifPanelOpen = !notifPanelOpen;
-  document.getElementById('notifPanel').classList.toggle('open',notifPanelOpen);
+  const panel = document.getElementById('notifPanel');
+  if (panel) panel.classList.toggle('open', notifPanelOpen);
+  // إغلاق الـ sidebar إذا كان مفتوحاً
+  if (notifPanelOpen) closeSidebar();
+  document.body.style.overflow = notifPanelOpen ? 'hidden' : '';
 }
 
 // ==============================
@@ -9082,6 +9099,17 @@ window.closeSidebar = function() {
   if (ov) { ov.classList.remove('show'); ov.style.display = 'none'; }
   document.body.style.overflow = '';
 };
+
+// إغلاق لوحة الإشعارات عند الضغط خارجها
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('notifPanel');
+  const bell  = document.querySelector('.notif-bell');
+  if (notifPanelOpen && panel && !panel.contains(e.target) && bell && !bell.contains(e.target)) {
+    notifPanelOpen = false;
+    panel.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+});
 
 // Close sidebar on nav item click (mobile)
 document.addEventListener('click', function(e) {
