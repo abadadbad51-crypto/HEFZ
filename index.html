@@ -994,20 +994,12 @@ tbody tr:last-child td{border-bottom:none;}
 
 /* ── Sidebar overlay (mobile backdrop) ── */
 .sidebar-overlay {
+  display: none;
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.5);
-  z-index: 999;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .3s;
+  background: rgba(0,0,0,.55);
+  z-index: 998;
 }
-.sidebar-overlay.show {
-  opacity: 1;
-  pointer-events: all;
-}
+.sidebar-overlay.show { display: block; }
 
 /* ── TABLET (769px – 1024px) ── */
 @media (max-width: 1024px) and (min-width: 769px) {
@@ -1608,7 +1600,7 @@ tbody tr:last-child td{border-bottom:none;}
 </div>
 
 <!-- Sidebar overlay (mobile backdrop) -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()" ontouchend="event.preventDefault();closeSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- Notifications Panel -->
 <div class="notif-panel" id="notifPanel">
@@ -9086,7 +9078,7 @@ window.toggleSidebar = function() {
   const ov = document.getElementById('sidebarOverlay');
   if (!sb) return;
   const isOpen = sb.classList.toggle('open');
-  if (ov) ov.classList.toggle('show', isOpen);
+  if (ov) { ov.style.display = isOpen ? 'block' : 'none'; ov.classList.toggle('show', isOpen); }
   document.body.style.overflow = isOpen ? 'hidden' : '';
 };
 
@@ -9094,9 +9086,23 @@ window.closeSidebar = function() {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebarOverlay');
   if (sb) sb.classList.remove('open');
-  if (ov) ov.classList.remove('show');
+  if (ov) { ov.style.display = 'none'; ov.classList.remove('show'); }
   document.body.style.overflow = '';
 };
+
+// إغلاق الـ sidebar عند اللمس خارجه (موبايل + ديسكتوب)
+document.addEventListener('DOMContentLoaded', function() {
+  var ov = document.getElementById('sidebarOverlay');
+  if (ov) {
+    var closeHandler = function(e) {
+      e.stopPropagation();
+      closeSidebar();
+    };
+    ov.addEventListener('click',      closeHandler, { passive: false });
+    ov.addEventListener('touchstart', closeHandler, { passive: false });
+    ov.addEventListener('touchend',   function(e) { e.preventDefault(); closeSidebar(); }, { passive: false });
+  }
+});
 
 // إغلاق لوحة الإشعارات عند الضغط خارجها
 document.addEventListener('click', function(e) {
