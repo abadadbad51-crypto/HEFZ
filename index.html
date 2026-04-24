@@ -994,16 +994,20 @@ tbody tr:last-child td{border-bottom:none;}
 
 /* ── Sidebar overlay (mobile backdrop) ── */
 .sidebar-overlay {
-  display: none;
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);
   z-index: 999;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
 }
-.sidebar-overlay.show { display: block; }
-.sidebar-overlay.show { display: block; }
+.sidebar-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
 
 /* ── TABLET (769px – 1024px) ── */
 @media (max-width: 1024px) and (min-width: 769px) {
@@ -2679,6 +2683,8 @@ function getDefaultPage() {
 
 function navigateTo(pageId) {
   currentPage = pageId;
+  // أغلق الـ sidebar تلقائياً عند الانتقال (موبايل)
+  closeSidebar();
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navEl = document.getElementById('nav-'+pageId);
   if (navEl) navEl.classList.add('active');
@@ -9080,15 +9086,7 @@ window.toggleSidebar = function() {
   const ov = document.getElementById('sidebarOverlay');
   if (!sb) return;
   const isOpen = sb.classList.toggle('open');
-  if (ov) {
-    if (isOpen) {
-      ov.style.display = 'block';
-      setTimeout(function() { ov.classList.add('show'); }, 10);
-    } else {
-      ov.classList.remove('show');
-      setTimeout(function() { ov.style.display = 'none'; }, 300);
-    }
-  }
+  if (ov) ov.classList.toggle('show', isOpen);
   document.body.style.overflow = isOpen ? 'hidden' : '';
 };
 
@@ -9096,10 +9094,7 @@ window.closeSidebar = function() {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebarOverlay');
   if (sb) sb.classList.remove('open');
-  if (ov) {
-    ov.classList.remove('show');
-    setTimeout(function() { ov.style.display = 'none'; }, 300);
-  }
+  if (ov) ov.classList.remove('show');
   document.body.style.overflow = '';
 };
 
