@@ -1,0 +1,85 @@
+{
+  // ─── HIFZ — Firebase Realtime Database Security Rules ────────────────
+  //
+  // المبدأ: كل وصول عام مرفوض افتراضياً (deny by default).
+  // النظام يعمل بالكامل من localStorage بدون الحاجة لـ Firebase.
+  // إن أردت تفعيل المزامنة بأمان:
+  //   1. فعّل Firebase Authentication في Firebase Console.
+  //   2. اربط حسابات النظام بـ UIDs من Firebase Auth.
+  //   3. هذه القواعد تتطلّب وجود auth.uid وتسمح فقط للمستخدمين المسجّلين.
+  //   4. للنشر:  npm run deploy:rules    أو    firebase deploy --only database
+  //
+  "rules": {
+    ".read":  false,
+    ".write": false,
+
+    "hifzDB": {
+      ".read":  false,
+      ".write": false,
+
+      // الملفات الشخصية للمستخدمين — كل مستخدم يصل لبياناته فقط
+      "users": {
+        "$uid": {
+          ".read":  "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+
+          "pass": {
+            ".read":     false,
+            ".write":    "auth != null && auth.uid === $uid",
+            ".validate": "newData.isString() && newData.val().beginsWith('pbkdf2$')"
+          },
+
+          "role": {
+            ".validate": "newData.isString() && (newData.val() === 'admin' || newData.val() === 'teacher' || newData.val() === 'parent')"
+          },
+
+          "email": {
+            ".validate": "newData.isString() && newData.val().matches(/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/)"
+          }
+        }
+      },
+
+      // الطلاب — قراءة لكل مسجّل، كتابة للمدير فقط
+      "students": {
+        ".read":  "auth != null",
+        ".write": "auth != null && root.child('hifzDB/users').child(auth.uid).child('role').val() === 'admin'"
+      },
+
+      // الحلقات — قراءة لكل مسجّل، كتابة للمدير فقط
+      "circles": {
+        ".read":  "auth != null",
+        ".write": "auth != null && root.child('hifzDB/users').child(auth.uid).child('role').val() === 'admin'"
+      },
+
+      // الحضور — يكتب المدير والمعلم
+      "attendance": {
+        ".read":  "auth != null",
+        ".write": "auth != null && (root.child('hifzDB/users').child(auth.uid).child('role').val() === 'admin' || root.child('hifzDB/users').child(auth.uid).child('role').val() === 'teacher')"
+      },
+
+      // المكافآت — يكتب المدير والمعلم
+      "rewards": {
+        ".read":  "auth != null",
+        ".write": "auth != null && (root.child('hifzDB/users').child(auth.uid).child('role').val() === 'admin' || root.child('hifzDB/users').child(auth.uid).child('role').val() === 'teacher')"
+      },
+
+      // التقويم — كتابة للمدير فقط
+      "calendar": {
+        ".read":  "auth != null",
+        ".write": "auth != null && root.child('hifzDB/users').child(auth.uid).child('role').val() === 'admin'"
+      },
+
+      // الإشعارات — كل مسجّل يقرأ ويكتب
+      "notifications": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      },
+
+      // إحصائيات الأسبوع — يكتب المدير والمعلم
+      "weeklyData": {
+        ".read":  "auth != null",
+        ".write": "auth != null && (root.child('hifzDB/users').child(auth.uid).child('role').val() === 'admin' || root.child('hifzDB/users').child(auth.uid).child('role').val() === 'teacher')"
+      }
+    }
+  }
+}

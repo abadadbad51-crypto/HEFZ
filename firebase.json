@@ -1,0 +1,28 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "database.rules.json",
+      "**/.*",
+      "**/.*/**",
+      "**/node_modules/**",
+      ".agents/**",
+      ".firebase/**",
+      ".git/**",
+      ".github/**",
+      "server.js",
+      "index.original.html",
+      "skills-lock.json",
+      "package.json",
+      "package-lock.json",
+      ".eslintrc.json",
+      ".prettierrc",
+      ".prettierignore",
+      ".eslintignore"
+    ]
+  }
+}

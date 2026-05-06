@@ -1,0 +1,8 @@
+node_modules/
+.firebase/
+.agents/
+.git/
+.github/
+index.original.html
+package-lock.json
+skills-lock.json
