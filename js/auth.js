@@ -43,9 +43,9 @@ window.setLoginLang = function(lang) {
   var orLbl = document.getElementById('orLabel');
   if (orLbl) orLbl.textContent = isEn ? 'or' : 'أو';
   var noAcc = document.getElementById('noAccountLabel');
-  if (noAcc) noAcc.textContent = isEn ? 'Need an account? ' : 'تحتاج حساباً؟ ';
+  if (noAcc) noAcc.textContent = isEn ? "Don't have an account?" : 'ليس لديك حساب؟';
   var createAcc = document.getElementById('createAccountLink');
-  if (createAcc) createAcc.textContent = isEn ? '✨ Contact admin' : '✨ تواصل مع المدير';
+  if (createAcc) createAcc.textContent = isEn ? '✨ Create Account' : '✨ إنشاء حساب';
 };
 
 // ── Forgot Password ──

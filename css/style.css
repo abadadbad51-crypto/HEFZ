@@ -167,6 +167,25 @@ body::before{
 }
 .btn-primary:hover{opacity:.94;transform:translateY(-1px);box-shadow:0 6px 20px rgba(45,22,15,.18);}
 
+.btn-secondary-login{
+  width:100%;
+  padding:11px 12px;
+  border-radius:8px;
+  border:1px solid var(--emerald-mid);
+  background:var(--emerald-glow);
+  color:var(--emerald-light);
+  font-family:'Tajawal',sans-serif;
+  font-weight:800;
+  font-size:.88rem;
+  cursor:pointer;
+  transition:all .2s;
+}
+.btn-secondary-login:hover{
+  transform:translateY(-1px);
+  border-color:var(--emerald-light);
+  box-shadow:0 6px 16px rgba(45,22,15,.14);
+}
+
 /* ===== APP SHELL ===== */
 #app{display:none;min-height:100vh;position:relative;z-index:1;}
 
