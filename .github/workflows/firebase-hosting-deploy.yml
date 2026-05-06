@@ -9,7 +9,10 @@ jobs:
   deploy:
     name: Deploy hosting + database rules
     runs-on: ubuntu-latest
-    environment: production
+    permissions:
+      contents: read
+      checks: write
+      deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,10 +28,22 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # ─── يتطلب إنشاء secrets التالية في GitHub repo settings ───
-      # FIREBASE_SERVICE_ACCOUNT — JSON لخدمة Firebase (من Firebase Console > Project Settings > Service accounts)
-      # FIREBASE_PROJECT_ID      — hifz-17bc4
+      - name: Check Firebase secrets
+        id: firebase-secrets
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT" ] && [ -n "$FIREBASE_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Firebase deploy skipped. Add FIREBASE_SERVICE_ACCOUNT and FIREBASE_PROJECT_ID repository secrets to enable automatic deployment."
+          fi
+
       - name: Deploy to Firebase Hosting
+        if: steps.firebase-secrets.outputs.ready == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
