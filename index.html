@@ -6,11 +6,18 @@
 <title>نظام إدارة حلقات تحفيظ القرآن الكريم</title>
 <meta name="description" content="نظام إدارة متكامل لحلقات تحفيظ القرآن الكريم — إدارة الطلاب والمعلمين والحلقات والحضور والتقارير">
 <meta name="theme-color" content="#2d160f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="حفظ">
 <link rel="icon" type="image/png" href="assets/logo-hifz-mark.png">
+<link rel="apple-touch-icon" href="assets/logo-hifz-mark.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<a href="#mainContent" class="skip-link">انتقل إلى المحتوى الرئيسي</a>
 
 <!-- ===================== LOGIN SCREEN ===================== -->
 <div id="loginScreen">
@@ -313,9 +320,34 @@
       <button class="lang-btn" id="lang-en" onclick="setLang('en')">English</button>
     </div>
   </div>
+  <!-- Dark/Light Mode Toggle -->
+  <div style="padding:8px 16px;border-top:1px solid var(--border)">
+    <div style="font-size:.65rem;color:var(--text-dim);font-weight:700;letter-spacing:.06em;margin-bottom:8px">🎨 المظهر</div>
+    <div style="display:flex;gap:6px">
+      <button id="theme-btn-light" onclick="setTheme('emerald')" class="lang-btn"
+        style="flex:1;font-size:.72rem" title="المظهر الفاتح">☀️ فاتح</button>
+      <button id="theme-btn-dark" onclick="setTheme('dark')" class="lang-btn"
+        style="flex:1;font-size:.72rem" title="المظهر الداكن">🌙 داكن</button>
+    </div>
+  </div>
   <div class="sidebar-bottom">
     <div id="sessionIndicator" style="text-align:center;margin-bottom:8px;opacity:.7"></div>
     <button class="logout-btn" id="logoutBtn" onclick="doLogout()">🚪 تسجيل خروج</button>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div class="pwa-banner" id="pwaBanner">
+  <div class="pwa-banner-row">
+    <div class="pwa-banner-icon">📲</div>
+    <div>
+      <div class="pwa-banner-title">ثبّت التطبيق على هاتفك</div>
+      <div class="pwa-banner-sub">اعمل بدون إنترنت وبشكل أسرع</div>
+    </div>
+  </div>
+  <div class="pwa-banner-btns">
+    <button class="btn btn-solid" onclick="installPWA()">📲 تثبيت</button>
+    <button class="btn" style="background:var(--surface2)" onclick="dismissPWA()">لاحقاً</button>
   </div>
 </div>
 
@@ -342,6 +374,41 @@
 <script src="js/pages-parent.js"></script>
 <!-- 11. Google Sign-In -->
 <script src="https://accounts.google.com/gsi/client" async></script>
+
+<!-- =================== SERVICE WORKER (PWA) =================== -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js')
+      .then(function(reg) { console.log('✅ SW registered:', reg.scope); })
+      .catch(function(err) { console.warn('SW registration failed:', err); });
+  });
+}
+
+// PWA Install Prompt
+let _pwaInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _pwaInstallPrompt = e;
+  var banner = document.getElementById('pwaBanner');
+  if (banner && !localStorage.getItem('pwaInstallDismissed')) banner.classList.add('show');
+});
+window.installPWA = function() {
+  if (!_pwaInstallPrompt) return;
+  _pwaInstallPrompt.prompt();
+  _pwaInstallPrompt.userChoice.then(function(r) {
+    if (r.outcome === 'accepted') showToast('✅ تم تثبيت التطبيق!', 'success');
+    _pwaInstallPrompt = null;
+    var banner = document.getElementById('pwaBanner');
+    if (banner) banner.classList.remove('show');
+  });
+};
+window.dismissPWA = function() {
+  localStorage.setItem('pwaInstallDismissed', '1');
+  var banner = document.getElementById('pwaBanner');
+  if (banner) banner.classList.remove('show');
+};
+</script>
 
 </body>
 </html>

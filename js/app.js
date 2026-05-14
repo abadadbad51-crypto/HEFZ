@@ -19,7 +19,7 @@ function initApp() {
   const now = new Date();
   document.getElementById('pageDate').textContent = now.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  // Avatar
+  // Avatar — نص فقط (textContent آمن)
   const av = document.getElementById('sidebarAvatar');
   av.textContent = (currentUser.name||'?').charAt(0);
   av.style.background = currentUser.color+'30';
@@ -91,15 +91,17 @@ function buildNav() {
   const config = navConfig[currentUser.role] || navConfig['admin'];
   config.forEach(item=>{
     if (item.section) {
-      const sec = isEn ? (item.sectionEn || item.section) : item.section;
+      const sec = escapeHtml(isEn ? (item.sectionEn || item.section) : item.section);
       nav.innerHTML += `<div class="nav-section">${sec}</div>`;
     } else {
-      const label = isEn ? (item.labelEn || item.label) : item.label;
+      const label = escapeHtml(isEn ? (item.labelEn || item.label) : item.label);
+      const icon  = escapeHtml(item.icon || '');
+      const id    = escapeHtml(item.id || '');
       nav.innerHTML += `
-        <div class="nav-item" id="nav-${item.id}" onclick="navigateTo('${item.id}')">
-          <span class="nav-icon">${item.icon}</span>
+        <div class="nav-item" id="nav-${id}" onclick="navigateTo('${id}')">
+          <span class="nav-icon">${icon}</span>
           ${label}
-          ${item.badge?`<span class="nav-badge">${item.badge}</span>`:''}
+          ${item.badge?`<span class="nav-badge">${Number(item.badge)||0}</span>`:''}
         </div>`;
     }
   });
@@ -170,12 +172,17 @@ function buildNotifPanel() {
   list.innerHTML = '';
   DB.notifications.forEach(n=>{
     const cls = n.type==='alert'?'alert':n.type==='warn'?'warn':'';
+    const safeMsg  = escapeHtml(n.msg  || '');
+    const safeTime = escapeHtml(n.time || '');
     list.innerHTML += `
       <div class="notif-item ${cls}">
-        ${n.msg}
-        <div class="notif-time">⏰ ${n.time}</div>
+        ${safeMsg}
+        <div class="notif-time">⏰ ${safeTime}</div>
       </div>`;
   });
+  if (DB.notifications.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:.85rem">🔔 لا توجد إشعارات</div>';
+  }
 }
 
 function toggleNotifPanel() {
@@ -201,11 +208,27 @@ function closeModalDirect() { document.getElementById('modalOverlay').classList.
 // ==============================
 // TOAST
 // ==============================
-function showToast(msg) {
+function showToast(msg, type) {
   const t = document.getElementById('toast');
+  // إزالة كلاسات النوع السابقة
+  t.className = 'toast';
+  // تحديد النوع (success / error / warning / info)
+  const toastType = type || detectToastType(msg);
+  if (toastType) t.classList.add('toast-' + toastType);
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3000);
+  const duration = (toastType === 'error') ? 5000 : (toastType === 'warning') ? 4000 : 3000;
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function detectToastType(msg) {
+  if (!msg) return 'info';
+  const s = String(msg);
+  if (s.includes('✅') || s.includes('تم') || s.includes('نجح') || s.includes('Success')) return 'success';
+  if (s.includes('❌') || s.includes('خطأ') || s.includes('فشل') || s.includes('Error')) return 'error';
+  if (s.includes('⚠️') || s.includes('تحذير') || s.includes('Warning')) return 'warning';
+  return 'info';
 }
 
 // ==============================
@@ -340,6 +363,11 @@ document.getElementById('pageDate').textContent = new Date().toLocaleDateString(
 loadDB();
 // تشفير كلمات المرور القديمة تلقائياً
 migratePasswords();
+// ---- اكتشاف Dark Mode من النظام (أول مرة فقط) ----
+if (!localStorage.getItem('hifz_theme')) {
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  localStorage.setItem('hifz_theme', prefersDark ? 'dark' : 'emerald');
+}
 loadSavedTheme();
 loadSavedLang();
 

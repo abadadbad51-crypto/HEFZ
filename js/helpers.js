@@ -492,13 +492,53 @@ function logAudit(action, details) {
 window.loadSavedTheme = function() {
   const theme = localStorage.getItem('hifz_theme') || 'emerald';
   document.documentElement.setAttribute('data-theme', theme);
+  setTimeout(function() { if (window.setTheme) window.setTheme(theme, true); }, 50);
 };
 
-window.setTheme = function(theme) {
+window.setTheme = function(theme, silent) {
   localStorage.setItem('hifz_theme', theme);
   document.documentElement.setAttribute('data-theme', theme);
-  // Update UI if dots exist
-  document.querySelectorAll('.theme-dot').forEach(d => {
+  // تحديث Theme Dot buttons إن وُجدت
+  document.querySelectorAll('.theme-dot').forEach(function(d) {
     d.classList.toggle('active', d.getAttribute('data-t') === theme);
   });
+  // تحديث أزرار Dark/Light في الـ Sidebar
+  const lightBtn = document.getElementById('theme-btn-light');
+  const darkBtn  = document.getElementById('theme-btn-dark');
+  const isDark   = theme === 'dark';
+  if (lightBtn) {
+    lightBtn.classList.toggle('active', !isDark);
+    lightBtn.style.color       = !isDark ? 'var(--emerald-light)' : '';
+    lightBtn.style.borderColor = !isDark ? 'var(--emerald-mid)'   : '';
+    lightBtn.style.background  = !isDark ? 'var(--emerald-glow)'  : '';
+  }
+  if (darkBtn) {
+    darkBtn.classList.toggle('active', isDark);
+    darkBtn.style.color       = isDark ? 'var(--emerald-light)' : '';
+    darkBtn.style.borderColor = isDark ? 'var(--emerald-mid)'   : '';
+    darkBtn.style.background  = isDark ? 'var(--emerald-glow)'  : '';
+  }
+  // تحديث theme-color meta tag
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = isDark ? '#141010' : '#2d160f';
+  if (!silent && typeof showToast === 'function') {
+    showToast(isDark ? '\u{1F319} \u0627\u0644\u0645\u0638\u0647\u0631 \u0627\u0644\u062F\u0627\u0643\u0646' : '\u2600\uFE0F \u0627\u0644\u0645\u0638\u0647\u0631 \u0627\u0644\u0641\u0627\u062A\u062D', 'info');
+  }
 };
+
+// ── اختصارات لوحة المفاتيح ──
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  // Ctrl/Cmd + D = تبديل Dark mode
+  if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+    e.preventDefault();
+    const cur = localStorage.getItem('hifz_theme') || 'emerald';
+    window.setTheme(cur === 'dark' ? 'emerald' : 'dark');
+  }
+  // Escape = إغلاق المودال / الـ Sidebar / الـ FAB
+  if (e.key === 'Escape') {
+    if (typeof closeModalDirect === 'function') closeModalDirect();
+    if (typeof closeSidebar === 'function') closeSidebar();
+    if (typeof closeFab === 'function') closeFab();
+  }
+});

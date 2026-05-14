@@ -1,4 +1,4 @@
-﻿/* ===== الثيم الوحيد: ألوان اللوغو ===== */
+/* ===== ط§ظ„ط«ظٹظ… ط§ظ„ظپط§طھط­ (ط§ظ„ط§ظپطھط±ط§ط¶ظٹ) ===== */
 :root, [data-theme="emerald"], [data-theme="desert"] {
   --primary: #2d160f;
   --primary-mid: #6e3f28;
@@ -33,6 +33,43 @@
   --r: 12px;
   --theme-grad1: rgba(45,22,15,0.06);
   --theme-grad2: rgba(183,151,88,0.08);
+}
+
+/* ===== ط§ظ„ط«ظٹظ… ط§ظ„ط¯ط§ظƒظ† ===== */
+[data-theme="dark"] {
+  --primary: #a07850;
+  --primary-mid: #c09060;
+  --primary-light: #d4aa78;
+  --primary-glow: rgba(160,120,80,0.15);
+  --emerald: #a07850;
+  --emerald-mid: #c09060;
+  --emerald-light: #d4aa78;
+  --emerald-glow: rgba(160,120,80,0.12);
+  --gold: #d4aa78;
+  --gold-light: #c09060;
+  --gold-pale: rgba(212,170,120,0.18);
+  --bg: #141010;
+  --bg2: #1c1610;
+  --surface: #201814;
+  --surface2: #2a2018;
+  --surface3: #362a20;
+  --border: rgba(212,170,120,0.14);
+  --border-gold: rgba(192,144,96,0.28);
+  --text: #f0e8d8;
+  --text-muted: #b09878;
+  --text-dim: #7a6858;
+  --red: #e05858;
+  --red-bg: rgba(224,88,88,0.12);
+  --blue: #6ab0c0;
+  --orange: #d07840;
+  --success: #6a9a70;
+  --success-soft: rgba(106,154,112,0.16);
+  --blue-soft: rgba(106,176,192,0.14);
+  --orange-soft: rgba(208,120,64,0.14);
+  --brand-ring: rgba(212,170,120,0.38);
+  --r: 12px;
+  --theme-grad1: rgba(160,120,80,0.08);
+  --theme-grad2: rgba(212,170,120,0.06);
 }
 
 
@@ -315,7 +352,7 @@ body::before{
   transform: scale(1.1);
 }
 .theme-dot.active::after {
-  content: '✓';
+  content: 'âœ“';
   position: absolute;
   inset: 0;
   display: flex;
@@ -326,6 +363,7 @@ body::before{
   font-weight: 900;
 }
 .theme-dot[data-t="emerald"] { background: linear-gradient(135deg, #fffaf2, #b79758 58%, #2d160f); border:1px solid rgba(45,22,15,.22); }
+.theme-dot[data-t="dark"]    { background: linear-gradient(135deg, #141010, #c09060 60%, #d4aa78); border:1px solid rgba(212,170,120,.22); }
 
 
 /* Theme transition */
@@ -664,13 +702,19 @@ tbody tr:last-child td{border-bottom:none;}
 
 /* Toast */
 .toast{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
-  background:var(--surface2);border:1px solid var(--emerald-mid);
-  border-radius:10px;padding:12px 20px;font-size:.88rem;
-  z-index:1000;transition:transform .4s cubic-bezier(.34,1.56,.64,1);
-  white-space:nowrap;box-shadow:0 8px 30px rgba(45,22,15,.16);
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:12px 22px;font-size:.88rem;
+  z-index:9999;transition:transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+  white-space:nowrap;box-shadow:0 10px 40px rgba(0,0,0,.22);
+  border-right:4px solid var(--emerald-mid);
+  opacity:0;
 }
-.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.toast-success{border-right-color:var(--success);}
+.toast.toast-error  {border-right-color:var(--red);}
+.toast.toast-warning{border-right-color:var(--gold);}
+.toast.toast-info   {border-right-color:var(--blue);}
 
 /* Report card */
 .report-section{
@@ -827,7 +871,7 @@ tbody tr:last-child td{border-bottom:none;}
 .surah-option.selected { background: var(--emerald-glow); }
 .surah-option.selected .s-name { color: var(--emerald-light); }
 
-/* ── Floating Action Button ── */
+/* â”€â”€ Floating Action Button â”€â”€ */
 .fab {
   position: fixed;
   bottom: 28px;
@@ -945,7 +989,7 @@ tbody tr:last-child td{border-bottom:none;}
 }
 .fab.open ~ .fab-overlay { display: block; }
 
-/* ── Student Photo ── */
+/* â”€â”€ Student Photo â”€â”€ */
 .s-photo {
   border-radius: 50%;
   object-fit: cover;
@@ -976,7 +1020,7 @@ tbody tr:last-child td{border-bottom:none;}
 .photo-upload-label { font-size: .78rem; color: var(--text-muted); text-align: center; }
 .photo-upload-label strong { color: var(--emerald-light); display: block; font-size: .82rem; }
 
-/* ── Language Switcher ── */
+/* â”€â”€ Language Switcher â”€â”€ */
 .lang-switcher {
   padding: 8px 16px 8px;
   border-bottom: 1px solid var(--border);
@@ -997,7 +1041,7 @@ tbody tr:last-child td{border-bottom:none;}
   color: var(--emerald-light);
 }
 
-/* ── CV Upload ── */
+/* â”€â”€ CV Upload â”€â”€ */
 .cv-upload-wrap {
   border: 2px dashed var(--border); border-radius: 10px;
   padding: 14px 16px; cursor: pointer; transition: all .2s;
@@ -1020,10 +1064,10 @@ tbody tr:last-child td{border-bottom:none;}
 }
 .cv-preview-btn:hover { background: rgba(183,151,88,.26); }
 /* ===================================================
-   RESPONSIVE — Tablet & Mobile
+   RESPONSIVE â€” Tablet & Mobile
    =================================================== */
 
-/* ── Hamburger button (hidden on desktop) ── */
+/* â”€â”€ Hamburger button (hidden on desktop) â”€â”€ */
 .menu-toggle {
   display: none;
   width: 44px; height: 44px;
@@ -1036,10 +1080,10 @@ tbody tr:last-child td{border-bottom:none;}
 }
 .menu-toggle:hover { border-color: var(--emerald-mid); }
 
-/* ── Sidebar overlay (mobile backdrop) ── */
+/* â”€â”€ Sidebar overlay (mobile backdrop) â”€â”€ */
 
 
-/* ── TABLET (769px – 1024px) ── */
+/* â”€â”€ TABLET (769px â€“ 1024px) â”€â”€ */
 @media (max-width: 1024px) and (min-width: 769px) {
   .sidebar { width: 200px; }
   .main { margin-right: 200px; padding: 18px; }
@@ -1049,7 +1093,7 @@ tbody tr:last-child td{border-bottom:none;}
   .modal { max-width: 92vw; padding: 22px; }
 }
 
-/* ── MOBILE (≤ 768px) ── */
+/* â”€â”€ MOBILE (â‰¤ 768px) â”€â”€ */
 @media (max-width: 768px) {
 
   /* Sidebar slides in from RIGHT on mobile */
@@ -1205,7 +1249,7 @@ tbody tr:last-child td{border-bottom:none;}
   .nav-item { padding: 12px 14px; font-size: .95rem; }
 }
 
-/* ── SMALL PHONES (≤ 380px) ── */
+/* â”€â”€ SMALL PHONES (â‰¤ 380px) â”€â”€ */
 @media (max-width: 380px) {
   .grid-4 { grid-template-columns: 1fr 1fr; }
   .grid-3 { grid-template-columns: 1fr; }
@@ -1217,7 +1261,7 @@ tbody tr:last-child td{border-bottom:none;}
   .role-btn .role-name { font-size: .72rem; }
 }
 
-/* ── Bottom nav (hidden on desktop) ── */
+/* â”€â”€ Bottom nav (hidden on desktop) â”€â”€ */
 .bottom-nav { display: none; }
 
 /* Scrollbar */
@@ -1247,14 +1291,14 @@ tbody tr:last-child td{border-bottom:none;}
 .tl-title{font-size:.85rem;font-weight:600;}
 .tl-sub{font-size:.75rem;color:var(--text-muted);margin-top:2px;}
 .tl-time{font-size:.7rem;color:var(--text-dim);}
-/* Login steps — one visible at a time */
+/* Login steps â€” one visible at a time */
 #loginStep3, #loginStep4 { display:none; }
 
 /* ============================================================
-   ===== كلاسات مستخرَجة من inline styles في index.html  =====
+   ===== ظƒظ„ط§ط³ط§طھ ظ…ط³طھط®ط±ظژط¬ط© ظ…ظ† inline styles ظپظٹ index.html  =====
    ============================================================ */
 
-/* — أزرار اللغة في شاشة الدخول — */
+/* â€” ط£ط²ط±ط§ط± ط§ظ„ظ„ط؛ط© ظپظٹ ط´ط§ط´ط© ط§ظ„ط¯ط®ظˆظ„ â€” */
 .login-lang-btn{
   padding:4px 14px;
   border-radius:20px;
@@ -1273,7 +1317,7 @@ tbody tr:last-child td{border-bottom:none;}
   color:var(--emerald-light);
 }
 
-/* — زر إظهار/إخفاء كلمة المرور (👁) — */
+/* â€” ط²ط± ط¥ط¸ظ‡ط§ط±/ط¥ط®ظپط§ط، ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± (ًں‘پ) â€” */
 .login-eye-btn{
   position:absolute;
   left:12px;
@@ -1285,7 +1329,7 @@ tbody tr:last-child td{border-bottom:none;}
   color:var(--text-dim);
 }
 
-/* — صناديق رسائل الخطأ في شاشة الدخول — */
+/* â€” طµظ†ط§ط¯ظٹظ‚ ط±ط³ط§ط¦ظ„ ط§ظ„ط®ط·ط£ ظپظٹ ط´ط§ط´ط© ط§ظ„ط¯ط®ظˆظ„ â€” */
 .login-error{
   display:none;
   background:var(--red-bg);
@@ -1297,7 +1341,7 @@ tbody tr:last-child td{border-bottom:none;}
   margin-bottom:12px;
 }
 
-/* — صناديق رسائل النجاح — */
+/* â€” طµظ†ط§ط¯ظٹظ‚ ط±ط³ط§ط¦ظ„ ط§ظ„ظ†ط¬ط§ط­ â€” */
 .login-success{
   display:none;
   background:var(--success-soft);
@@ -1309,7 +1353,7 @@ tbody tr:last-child td{border-bottom:none;}
   margin-bottom:12px;
 }
 
-/* — زر الرجوع داخل بطاقات الدخول — */
+/* â€” ط²ط± ط§ظ„ط±ط¬ظˆط¹ ط¯ط§ط®ظ„ ط¨ط·ط§ظ‚ط§طھ ط§ظ„ط¯ط®ظˆظ„ â€” */
 .login-back-btn{
   background:var(--surface2);
   border:1px solid var(--border);
@@ -1323,7 +1367,7 @@ tbody tr:last-child td{border-bottom:none;}
 }
 .login-back-btn:hover{ border-color:var(--emerald-mid); }
 
-/* — شريط معلومات أعلى بطاقة الدخول (رمز + نص) — */
+/* â€” ط´ط±ظٹط· ظ…ط¹ظ„ظˆظ…ط§طھ ط£ط¹ظ„ظ‰ ط¨ط·ط§ظ‚ط© ط§ظ„ط¯ط®ظˆظ„ (ط±ظ…ط² + ظ†طµ) â€” */
 .login-info-banner{
   display:flex;
   align-items:center;
@@ -1343,7 +1387,7 @@ tbody tr:last-child td{border-bottom:none;}
   flex-shrink:0;
 }
 
-/* — زر الدخول الأساسي (Submit) في خطوات استرجاع/تأكيد — */
+/* â€” ط²ط± ط§ظ„ط¯ط®ظˆظ„ ط§ظ„ط£ط³ط§ط³ظٹ (Submit) ظپظٹ ط®ط·ظˆط§طھ ط§ط³طھط±ط¬ط§ط¹/طھط£ظƒظٹط¯ â€” */
 .login-submit-btn{
   width:100%;
   padding:11px;
@@ -1358,7 +1402,7 @@ tbody tr:last-child td{border-bottom:none;}
   transition:all .2s;
 }
 
-/* — زر Google sign-in — */
+/* â€” ط²ط± Google sign-in â€” */
 .google-signin-btn{
   width:100%;
   padding:11px;
@@ -1382,7 +1426,7 @@ tbody tr:last-child td{border-bottom:none;}
   background:#f8f8f8;
 }
 
-/* — أيقونة دائرية (40px) في رؤوس البطاقات — */
+/* â€” ط£ظٹظ‚ظˆظ†ط© ط¯ط§ط¦ط±ظٹط© (40px) ظپظٹ ط±ط¤ظˆط³ ط§ظ„ط¨ط·ط§ظ‚ط§طھ â€” */
 .login-avatar-icon{
   width:40px;height:40px;
   border-radius:50%;
@@ -1397,7 +1441,7 @@ tbody tr:last-child td{border-bottom:none;}
   border-color:var(--gold);
 }
 
-/* — خط الفاصل "أو" في شاشة الدخول — */
+/* â€” ط®ط· ط§ظ„ظپط§طµظ„ "ط£ظˆ" ظپظٹ ط´ط§ط´ط© ط§ظ„ط¯ط®ظˆظ„ â€” */
 .login-or{
   display:flex;
   align-items:center;
@@ -1414,7 +1458,7 @@ tbody tr:last-child td{border-bottom:none;}
   color:var(--text-dim);
 }
 
-/* — رابط نصّي صغير بلون الـ emerald — */
+/* â€” ط±ط§ط¨ط· ظ†طµظ‘ظٹ طµط؛ظٹط± ط¨ظ„ظˆظ† ط§ظ„ظ€ emerald â€” */
 .login-link{
   font-size:.78rem;
   color:var(--emerald-light);
@@ -1423,7 +1467,7 @@ tbody tr:last-child td{border-bottom:none;}
   text-decoration:underline;
 }
 
-/* — الطبقة الخلفية للقائمة الجانبية على الموبايل — */
+/* â€” ط§ظ„ط·ط¨ظ‚ط© ط§ظ„ط®ظ„ظپظٹط© ظ„ظ„ظ‚ط§ط¦ظ…ط© ط§ظ„ط¬ط§ظ†ط¨ظٹط© ط¹ظ„ظ‰ ط§ظ„ظ…ظˆط¨ط§ظٹظ„ â€” */
 .sidebar-overlay{
   display:none;
   position:fixed;
@@ -1434,7 +1478,7 @@ tbody tr:last-child td{border-bottom:none;}
   -webkit-tap-highlight-color:transparent;
 }
 
-/* — رأس بطاقة استرجاع كلمة المرور (يحتوي زر رجوع) — */
+/* â€” ط±ط£ط³ ط¨ط·ط§ظ‚ط© ط§ط³طھط±ط¬ط§ط¹ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± (ظٹط­طھظˆظٹ ط²ط± ط±ط¬ظˆط¹) â€” */
 .login-card-header{
   display:flex;
   align-items:center;
@@ -1453,5 +1497,56 @@ tbody tr:last-child td{border-bottom:none;}
   font-size:.95rem;
 }
 
-/* مساعد للحاويات المرنة — مرونة 1 مع منع التجاوز */
+/* ظ…ط³ط§ط¹ط¯ ظ„ظ„ط­ط§ظˆظٹط§طھ ط§ظ„ظ…ط±ظ†ط© â€” ظ…ط±ظˆظ†ط© 1 ظ…ط¹ ظ…ظ†ط¹ ط§ظ„طھط¬ط§ظˆط² */
 .flex-1-min{ flex:1; min-width:0; }
+
+/* ===== Scrollbar ظ…ط®طµظ‘طµ ===== */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--emerald-mid);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--primary-light);}
+
+/* ===== Skip to content (Accessibility) ===== */
+.skip-link{
+  position:absolute;top:-100px;left:50%;transform:translateX(-50%);
+  background:var(--emerald-mid);color:#fff;
+  padding:8px 18px;border-radius:0 0 8px 8px;
+  font-size:.85rem;font-weight:700;z-index:99999;
+  transition:top .2s;
+}
+.skip-link:focus{top:0;}
+
+/* ===== PWA Install Banner ===== */
+.pwa-banner{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface);border:1px solid var(--emerald-mid);
+  border-radius:16px;padding:16px 20px;
+  box-shadow:0 12px 40px rgba(0,0,0,.22);
+  z-index:9998;max-width:360px;width:90%;
+  font-family:'Tajawal',sans-serif;
+  animation:fadeUp .4s ease both;
+  display:none;
+}
+.pwa-banner.show{display:block;}
+.pwa-banner-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.pwa-banner-icon{font-size:2rem;}
+.pwa-banner-title{font-weight:700;font-size:.9rem;}
+.pwa-banner-sub{font-size:.74rem;color:var(--text-muted);margin-top:2px;}
+.pwa-banner-btns{display:flex;gap:8px;}
+.pwa-banner-btns .btn{flex:1;justify-content:center;}
+
+/* ===== إعدادات الطباعة (Print Styles) ===== */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .sidebar, .top-nav, .fab, .toast, .modal-hdr .close-btn, .pwa-banner { display: none !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  .modal { position: relative !important; top: 0 !important; left: 0 !important; transform: none !important; width: 100% !important; max-width: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; }
+  .modal-hdr { border-bottom: 2px solid #000 !important; margin-bottom: 20px !important; }
+  .modal-hdr h2 { color: #000 !important; font-size: 1.5rem !important; }
+  .btn, button { display: none !important; }
+  .card, .report-section, .stat-box { break-inside: avoid; border: 1px solid #ccc !important; background: #fff !important; box-shadow: none !important; }
+  .badge { border: 1px solid #000 !important; background: transparent !important; color: #000 !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+
+

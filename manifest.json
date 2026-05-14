@@ -1,0 +1,43 @@
+{
+  "name": "حفظ — نظام إدارة حلقات التحفيظ",
+  "short_name": "حفظ",
+  "description": "نظام إدارة متكامل لحلقات تحفيظ القرآن الكريم — معهد نور القرآن، دمشق",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#141010",
+  "theme_color": "#2d160f",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "assets/logo-hifz-mark.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/logo-hifz-mark.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "لوحة التحكم",
+      "short_name": "الرئيسية",
+      "url": "/?page=dashboard",
+      "icons": [{ "src": "assets/logo-hifz-mark.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "تسجيل جلسة",
+      "short_name": "جلسة",
+      "url": "/?page=t-session",
+      "icons": [{ "src": "assets/logo-hifz-mark.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": []
+}

@@ -57,8 +57,8 @@ pages['dashboard'] = function(el) {
             onmouseleave="this.style.borderColor=''">
             <span class="plan-icon">🕌</span>
             <div class="plan-text">
-              <div style="font-weight:600">${c.name}</div>
-              <div style="font-size:.75rem;color:var(--text-muted)">${teacher?.name||''} · ${c.time} · ${c.days}</div>
+              <div style="font-weight:600">${escapeHtml(c.name||'')}</div>
+              <div style="font-size:.75rem;color:var(--text-muted)">${escapeHtml(teacher?.name||'')} · ${escapeHtml(c.time||'')} · ${escapeHtml(c.days||'')}</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
               <span class="badge green">${c.students.length} ${t('students')}</span>
@@ -92,9 +92,9 @@ pages['dashboard'] = function(el) {
               <tr>
                 <td><div style="display:flex;align-items:center;gap:8px">
                   ${studentAvatar(s, 30, false)}
-                  <span>${s.name}</span>
+                  <span>${escapeHtml(s.name||'')}</span>
                 </div></td>
-                <td>${s.circle}</td>
+                <td>${escapeHtml(s.circle||'')}</td>
                 <td>${levelBadge(s.level)}</td>
                 <td>
                   <div>${s.pages} / ${s.totalPages}</div>
