@@ -1982,6 +1982,31 @@ pages['settings'] = function(el) {
   ];
 
   el.innerHTML = `
+    <!-- Preferences Card -->
+    <div class="card" style="margin-bottom:16px;border:1px solid var(--border)">
+      <div class="card-title"><span class="ct-icon">🌐</span> ${isEn?'Preferences':'التفضيلات الأساسية'}</div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+        <!-- Language -->
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-weight:700;font-size:.9rem;margin-bottom:10px">🌐 ${isEn?'Language':'اللغة'}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn ${currentLang==='ar'?'btn-solid':''}" style="flex:1;font-size:.8rem;padding:8px" onclick="setLang('ar');setTimeout(()=>navigateTo('settings'),50)">عربي</button>
+            <button class="btn ${currentLang==='en'?'btn-solid':''}" style="flex:1;font-size:.8rem;padding:8px" onclick="setLang('en');setTimeout(()=>navigateTo('settings'),50)">English</button>
+          </div>
+        </div>
+
+        <!-- Theme -->
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-weight:700;font-size:.9rem;margin-bottom:10px">🎨 ${isEn?'Theme':'المظهر'}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn ${(localStorage.getItem('hifz_theme')||'emerald')!=='dark'?'btn-solid':''}" style="flex:1;font-size:.8rem;padding:8px" onclick="setTheme('emerald');setTimeout(()=>navigateTo('settings'),50)">☀️ ${isEn?'Light':'فاتح'}</button>
+            <button class="btn ${localStorage.getItem('hifz_theme')==='dark'?'btn-solid':''}" style="flex:1;font-size:.8rem;padding:8px" onclick="setTheme('dark');setTimeout(()=>navigateTo('settings'),50)">🌙 ${isEn?'Dark':'داكن'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Push Notifications Card -->
     <div class="card" style="margin-bottom:16px;border:1px solid var(--emerald-mid)">
       <div class="card-title"><span class="ct-icon">🔔</span> ${isEn?'Push Notifications':'إشعارات Push'}</div>
