@@ -1,4 +1,4 @@
-﻿// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
 // 🔐 SECURITY — تشفير كلمات المرور + انتهاء الجلسة
 // ════════════════════════════════════════════════════════
 //
@@ -149,18 +149,7 @@ function createSessionWarningBanner() {
 }
 
 function showSessionWarning() {
-  var banner = document.getElementById('sessionWarningBanner');
-  if (!banner) return;
-  banner.style.display = 'flex';
-  var secs = 60;
-  var cd = document.getElementById('sessionCountdown');
-  if (cd) cd.textContent = secs;
-  if (_countdownInterval) clearInterval(_countdownInterval);
-  _countdownInterval = setInterval(function() {
-    secs--;
-    if (cd) cd.textContent = secs;
-    if (secs <= 0) clearInterval(_countdownInterval);
-  }, 1000);
+  // تم تعطيله بناء على طلب المستخدم
 }
 
 function hideSessionWarning() {
@@ -173,12 +162,7 @@ function hideSessionWarning() {
 function updateSessionIndicator() {
   var el = document.getElementById('sessionIndicator');
   if (!el || !currentUser) return;
-  var remaining = Math.max(0, SESSION_TIMEOUT - (Date.now() - _lastActivity));
-  var mins = Math.floor(remaining / 60000);
-  var secs = Math.floor((remaining % 60000) / 1000);
-  var color = remaining < 5 * 60000 ? '#a7352a' : remaining < 10 * 60000 ? '#836128' : '#536f5a';
-  el.innerHTML = '<span style="color:' + color + ';font-size:.72rem">⏱ ' +
-    (mins + ':' + (secs < 10 ? '0' : '') + secs) + ' متبقي</span>';
+  el.style.display = 'none'; // مخفي
 }
 
 function resetSessionTimer() {
