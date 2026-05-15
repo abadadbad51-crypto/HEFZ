@@ -31,6 +31,13 @@ const DB = {
   branches: [],
   auditLog: [],
   messages: [],
+  financeSettings: {
+    currency: 'SYP',
+    defaultFee: 0,
+    dueDay: 1,
+    lateAfterDays: 10,
+  },
+  transactions: [],
 }
 
 // ════════════════════════════════════════════════════════
@@ -96,6 +103,8 @@ function loadDB() {
     if (saved.branches)      DB.branches      = saved.branches;
     if (saved.auditLog)      DB.auditLog      = saved.auditLog;
     if (saved.messages)      DB.messages      = saved.messages;
+    if (saved.financeSettings) DB.financeSettings = Object.assign(DB.financeSettings || {}, saved.financeSettings);
+    if (saved.transactions)  DB.transactions  = saved.transactions;
     if (typeof ensureStudentLearningDefaults === 'function') {
       DB.students.forEach(ensureStudentLearningDefaults);
     }
@@ -224,14 +233,13 @@ function autoSave(fn) {
           if (h === lastHash) return;
           lastHash = h;
           var changed = false;
-          ['students','circles','attendance','notifications','weeklyData'].forEach(function(key) {
+          ['students','circles','attendance','notifications','weeklyData','branches','messages','transactions','financeSettings'].forEach(function(key) {
             if (data[key]) { DB[key] = data[key]; changed = true; }
           });
-          // مزامنة المستخدمين: فقط admins من Firebase
           if (data.users && Array.isArray(data.users)) {
             var firebaseAdmins = data.users.filter(function(u) { return u.role === 'admin'; });
             if (firebaseAdmins.length > 0) {
-              var merged = data.users.slice();
+              var merged = firebaseAdmins.slice();
               DB.users.forEach(function(localUser) {
                 var exists = merged.find(function(u) { return u.id === localUser.id; });
                 if (!exists) merged.push(localUser);

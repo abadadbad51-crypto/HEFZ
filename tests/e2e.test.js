@@ -262,6 +262,11 @@ function resetApp(context) {
       DB.attendance = {};
       DB.rewards = {};
       DB.calendar = [];
+      DB.branches = [];
+      DB.auditLog = [];
+      DB.messages = [];
+      DB.financeSettings = { currency: 'SYP', defaultFee: 0, dueDay: 1, lateAfterDays: 10 };
+      DB.transactions = [];
       window.__toasts = [];
       window.__pushes = [];
       window.__lastPage = null;
@@ -304,6 +309,7 @@ function createApp() {
     'js/pages-admin.js',
     'js/pages-teacher.js',
     'js/pages-parent.js',
+    'js/finance.js',
   ].forEach(script => loadScript(context, script));
   resetApp(context);
   return context;
@@ -385,6 +391,21 @@ test('key admin, parent, teacher, session, attendance, and student filter flows 
   assert.equal(student.teacher, teacher.id);
   assert.equal(parent.studentId, student.id);
   assert.match(parent.pass, /^pbkdf2\$/);
+
+  vm.runInContext(
+    `
+      addFinanceTransaction({ type: 'charge', category: 'tuition', studentId: ${student.id}, amount: 100, date: '2026-05-01', dueDate: '2026-05-10' });
+      addFinanceTransaction({ type: 'payment', category: 'tuition', studentId: ${student.id}, amount: 60, date: '2026-05-02', method: 'cash' });
+      addFinanceTransaction({ type: 'discount', category: 'tuition', studentId: ${student.id}, amount: 10, date: '2026-05-03' });
+    `,
+    context
+  );
+  const financeSummary = read(context, `studentFinanceSummary(${student.id})`);
+  assert.equal(financeSummary.charges, 100);
+  assert.equal(financeSummary.payments, 60);
+  assert.equal(financeSummary.discounts, 10);
+  assert.equal(financeSummary.balance, 30);
+  assert.equal(db().transactions.length, 3);
 
   vm.runInContext(
     "pages['students'](document.getElementById('studentsPage'))",
