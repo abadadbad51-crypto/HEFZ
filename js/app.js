@@ -50,6 +50,7 @@ const navConfig = {
     {section:'إدارة الحلقات', sectionEn:'Halaqa Management'},
     {id:'students',   icon:'👥', label:'الطلاب',               labelEn:'Students'},
     {id:'teachers',   icon:'👨‍🏫', label:'المعلمون',            labelEn:'Teachers'},
+    {id:'employees',  icon:'🧑‍💼', label:'الموظفون',            labelEn:'Employees'},
     {id:'circles',    icon:'🕌', label:'الحلقات',              labelEn:'Quran Halaqas'},
     {id:'attendance', icon:'✅', label:'الحضور والغياب',        labelEn:'Attendance'},
     {id:'calendar',   icon:'📅', label:'التقويم',              labelEn:'Calendar'},
@@ -126,6 +127,7 @@ function navigateTo(pageId) {
     'analytics':       currentLang==='en' ? 'Advanced Analytics'   : 'الإحصائيات المتقدمة',
     'students':        currentLang==='en' ? 'Students'             : 'إدارة الطلاب',
     'teachers':        currentLang==='en' ? 'Teachers'             : 'إدارة المعلمين',
+    'employees':       currentLang==='en' ? 'Employees'            : 'إدارة الموظفين',
     'circles':         currentLang==='en' ? 'Quran Halaqas'        : 'الحلقات القرآنية',
     'attendance':      currentLang==='en' ? 'Attendance'           : 'الحضور والغياب',
     'calendar':        currentLang==='en' ? 'Calendar'             : 'التقويم',
@@ -322,6 +324,7 @@ function buildBottomNav() {
     admin: [
       {icon:'🏠', label: currentLang==='en'?'Home':'الرئيسية',      page:'dashboard'},
       {icon:'👥', label: currentLang==='en'?'Students':'الطلاب',    page:'students'},
+      {icon:'🧑‍💼', label: currentLang==='en'?'Staff':'الموظفون',   page:'employees'},
       {icon:'📈', label: currentLang==='en'?'Analytics':'إحصائيات', page:'analytics'},
       {icon:'💰', label: currentLang==='en'?'Finance':'المالية',    page:'finance'},
       {icon:'📅', label: currentLang==='en'?'Calendar':'التقويم',   page:'calendar'},

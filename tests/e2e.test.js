@@ -265,6 +265,7 @@ function resetApp(context) {
       DB.branches = [];
       DB.auditLog = [];
       DB.messages = [];
+      DB.employees = [];
       DB.financeSettings = { currency: 'SYP', defaultFee: 0, dueDay: 1, lateAfterDays: 10 };
       DB.transactions = [];
       window.__toasts = [];
@@ -310,6 +311,7 @@ function createApp() {
     'js/pages-teacher.js',
     'js/pages-parent.js',
     'js/finance.js',
+    'js/employees.js',
   ].forEach(script => loadScript(context, script));
   resetApp(context);
   return context;
@@ -406,6 +408,30 @@ test('key admin, parent, teacher, session, attendance, and student filter flows 
   assert.equal(financeSummary.discounts, 10);
   assert.equal(financeSummary.balance, 30);
   assert.equal(db().transactions.length, 3);
+
+  vm.runInContext(
+    `
+      DB.employees.push({
+        id: 1,
+        name: 'موظف الاختبار',
+        position: 'محاسب',
+        department: 'finance',
+        phone: '0500000000',
+        email: 'employee-e2e@example.com',
+        salary: 75,
+        hireDate: '2026-05-01',
+        status: 'active',
+        notes: ''
+      });
+      addFinanceTransaction({ type: 'expense', category: 'salary', employeeId: 1, amount: 75, date: '2026-05-04', method: 'cash', notes: 'صرف راتب الاختبار' });
+    `,
+    context
+  );
+  assert.equal(db().employees.length, 1);
+  const salaryTx = db().transactions.find(tx => tx.type === 'expense' && tx.category === 'salary');
+  assert.equal(salaryTx.employeeId, 1);
+  assert.equal(salaryTx.amount, 75);
+  assert.equal(read(context, `financePartyName(DB.transactions.find(tx => tx.employeeId === 1))`), 'موظف الاختبار');
 
   vm.runInContext(
     "pages['students'](document.getElementById('studentsPage'))",

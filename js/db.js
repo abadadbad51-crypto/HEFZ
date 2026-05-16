@@ -31,6 +31,7 @@ const DB = {
   branches: [],
   auditLog: [],
   messages: [],
+  employees: [],
   financeSettings: {
     currency: 'SYP',
     defaultFee: 0,
@@ -103,6 +104,7 @@ function loadDB() {
     if (saved.branches)      DB.branches      = saved.branches;
     if (saved.auditLog)      DB.auditLog      = saved.auditLog;
     if (saved.messages)      DB.messages      = saved.messages;
+    if (saved.employees)     DB.employees     = saved.employees;
     if (saved.financeSettings) DB.financeSettings = Object.assign(DB.financeSettings || {}, saved.financeSettings);
     if (saved.transactions)  DB.transactions  = saved.transactions;
     if (typeof ensureStudentLearningDefaults === 'function') {
@@ -233,7 +235,7 @@ function autoSave(fn) {
           if (h === lastHash) return;
           lastHash = h;
           var changed = false;
-          ['students','circles','attendance','notifications','weeklyData','branches','messages','transactions','financeSettings'].forEach(function(key) {
+          ['students','circles','attendance','notifications','weeklyData','branches','messages','employees','transactions','financeSettings'].forEach(function(key) {
             if (data[key]) { DB[key] = data[key]; changed = true; }
           });
           if (data.users && Array.isArray(data.users)) {

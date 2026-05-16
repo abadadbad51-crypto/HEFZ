@@ -49,6 +49,19 @@ function financeStudentName(id) {
   return s ? s.name : (currentLang === 'en' ? 'General' : 'عام');
 }
 
+function financeEmployeeName(id) {
+  const e = (DB.employees || []).find(emp => Number(emp.id) === Number(id));
+  return e ? e.name : '';
+}
+
+function financePartyName(tx) {
+  if (tx.type === 'expense' && tx.employeeId) {
+    const name = financeEmployeeName(tx.employeeId);
+    return name ? name : (currentLang === 'en' ? 'Employee' : 'موظف');
+  }
+  return financeStudentName(tx.studentId);
+}
+
 function financeParentForStudent(studentId) {
   return DB.users.find(u => u.role === 'parent' && Number(u.studentId) === Number(studentId)) || null;
 }
@@ -125,6 +138,7 @@ function addFinanceTransaction(data) {
     type: data.type,
     category: data.category || 'tuition',
     studentId,
+    employeeId: data.type === 'expense' && data.employeeId ? Number(data.employeeId) : null,
     parentId: parent ? parent.id : null,
     amount,
     date: data.date || todayISO(),
@@ -137,7 +151,7 @@ function addFinanceTransaction(data) {
     createdAt: new Date().toISOString(),
   };
   DB.transactions.unshift(tx);
-  if (typeof logAudit === 'function') logAudit('finance.' + tx.type, financeTypeLabel(tx.type) + ': ' + money(tx.amount) + ' - ' + financeStudentName(tx.studentId));
+  if (typeof logAudit === 'function') logAudit('finance.' + tx.type, financeTypeLabel(tx.type) + ': ' + money(tx.amount) + ' - ' + financePartyName(tx));
   saveDB();
   return tx;
 }
@@ -284,7 +298,7 @@ function renderFinanceTransactions(limit) {
   if (type) txs = txs.filter(tx => tx.type === type);
   if (month) txs = txs.filter(tx => monthKey(tx.date) === month || monthKey(tx.dueDate) === month);
   if (q) {
-    txs = txs.filter(tx => [financeStudentName(tx.studentId), tx.reference, tx.notes, financeCategoryLabel(tx.category), financeTypeLabel(tx.type)]
+    txs = txs.filter(tx => [financePartyName(tx), tx.reference, tx.notes, financeCategoryLabel(tx.category), financeTypeLabel(tx.type)]
       .join(' ').toLowerCase().includes(q));
   }
   txs.sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.id) - Number(a.id));
@@ -295,7 +309,7 @@ function renderFinanceTransactions(limit) {
         <thead><tr>
           <th>${currentLang === 'en' ? 'Date' : 'التاريخ'}</th>
           <th>${currentLang === 'en' ? 'Type' : 'النوع'}</th>
-          <th>${currentLang === 'en' ? 'Student' : 'الطالب'}</th>
+          <th>${currentLang === 'en' ? 'Related to' : 'مرتبط بـ'}</th>
           <th>${currentLang === 'en' ? 'Category' : 'البند'}</th>
           <th>${currentLang === 'en' ? 'Amount' : 'المبلغ'}</th>
           <th>${currentLang === 'en' ? 'Method' : 'الطريقة'}</th>
@@ -306,7 +320,7 @@ function renderFinanceTransactions(limit) {
             <tr>
               <td style="color:var(--text-muted)">${escapeHtml(tx.date || '')}</td>
               <td><span class="badge ${tx.type === 'payment' ? 'green' : tx.type === 'charge' ? 'gold' : tx.type === 'expense' ? 'red' : 'blue'}">${financeTypeLabel(tx.type)}</span></td>
-              <td>${escapeHtml(financeStudentName(tx.studentId))}</td>
+              <td>${escapeHtml(financePartyName(tx))}</td>
               <td>${financeCategoryLabel(tx.category)}</td>
               <td style="font-weight:900;color:${tx.type === 'expense' ? 'var(--red)' : txSign(tx) < 0 ? 'var(--emerald-light)' : 'var(--gold-light)'}">${money(tx.amount)}</td>
               <td>${escapeHtml(tx.method || '—')}</td>
